@@ -32,22 +32,6 @@ External experiment logging is disabled by default. Pass `--report_to swanlab` t
 - `data/`: AdvBench text split files used for training and inference.
 - `scripts/check_vectors.py`: steering-vector loading check.
 
-## Data
-
-| File | Rows | Use |
-| --- | ---: | --- |
-| `data/advbench_train_300.csv` | 300 | text-only safety preference training |
-| `data/advbench_infer_200.csv` | 200 | AdvWave attack and defense inference |
-
-Audio queries are generated or cached by the attack runners from the shared AdvBench inference split. No additional AdvBench CSV files are required.
-
-## Steering Vectors
-
-| Model | Layer | Epoch | Path |
-| --- | ---: | ---: | --- |
-| Qwen2-Audio-7B-Instruct | 15 | 100 | `vectors/qwen2_audio/vec_ep100_layer15.pt` |
-| Qwen2.5-Omni-7B | 13 | 400 | `vectors/qwen25_omni/layer13/vec_ep400_layer13.pt` |
-| LLaMA-Omni2-7B | 12 | 300 | `vectors/llamaomni2/layer12/vec_ep300_layer12.pt` |
 
 ## Training
 
