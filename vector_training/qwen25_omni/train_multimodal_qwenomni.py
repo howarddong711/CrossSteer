@@ -6,7 +6,6 @@ os.environ['TOKENIZERS_PARALLELISM'] = 'false'
 
 os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 
-
 os.environ['HF_DATASETS_IN_MEMORY_MAX_SIZE'] = '0'
 os.environ['HF_DATASETS_DISABLE_PROGRESS_BARS'] = '1'
 os.environ['TOKENIZERS_PARALLELISM'] = 'false'
@@ -40,7 +39,6 @@ from transformers import AutoProcessor, AutoTokenizer, Qwen2_5OmniForConditional
 from trl import DPOConfig
 from trl_text_trainer import CrossSteerTextTrainer
 
-
 if not hasattr(torch.optim.Optimizer, "train"):
     def _optimizer_train(self):
         return self
@@ -48,7 +46,6 @@ if not hasattr(torch.optim.Optimizer, "train"):
         return self
     torch.optim.Optimizer.train = _optimizer_train
     torch.optim.Optimizer.eval = _optimizer_eval
-
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -66,11 +63,9 @@ SYSTEM_PROMPT = "You are a helpful, honest and concise assistant."
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 CROSSSTEER_DATA_DIR = os.path.join(REPO_ROOT, "data")
 
-
 def resolve_advbench_split(train=True):
     filename = "advbench_train_300.csv" if train else "advbench_infer_200.csv"
     return os.path.join(CROSSSTEER_DATA_DIR, filename)
-
 
 def patch_qwen2_5_omni_load_speakers():
 
@@ -90,7 +85,6 @@ def patch_qwen2_5_omni_load_speakers():
     except Exception as err:
         logger.warning(f"⚠️  Failed to patch load_speakers: {err}")
 
-
 def resolve_transformer_layers(model):
 
     candidates = [
@@ -108,7 +102,6 @@ def resolve_transformer_layers(model):
         except AttributeError:
             continue
     raise AttributeError("Could not locate transformer layers on the Qwen2.5-Omni model.")
-
 
 def ensure_language_model_layers(model, layers):
 
@@ -151,7 +144,6 @@ def ensure_language_model_layers(model, layers):
     else:
         model.language_model = SimpleNamespace(model=SimpleNamespace(layers=layers))
 
-
 def resolve_hidden_size(model, layers):
 
     if hasattr(model, "config"):
@@ -169,13 +161,6 @@ def resolve_hidden_size(model, layers):
     raise ValueError("Unable to resolve hidden_size for Qwen2.5-Omni model.")
 
 class BlockWrapper(torch.nn.Module):
-
-
-
-
-
-
-
 
     def __init__(self, block, hidden_size):
         super().__init__()
@@ -197,13 +182,10 @@ class BlockWrapper(torch.nn.Module):
 
         output = self.block(*args, **kwargs)
 
-
         if self.multiplier_value == 0.0:
             return output
 
-
         active_vec = self.initial_vec if self._use_initial_vec else self.vec
-
 
         if isinstance(output, tuple):
             hidden_states = output[0]
@@ -227,18 +209,9 @@ class BlockWrapper(torch.nn.Module):
 
     def use_reference_mode(self, enable=True):
 
-
-
-
-
-
         self._use_initial_vec = enable
 
     def save_initial_vec(self):
-
-
-
-
 
         with torch.no_grad():
             self.initial_vec.copy_(self.vec.data)
@@ -253,7 +226,6 @@ class BlockWrapper(torch.nn.Module):
     def extra_repr(self):
         return f'multiplier={self.multiplier_value:.4f}, vec_shape={self.vec.shape}'
 
-
 def print_detailed_memory(message=""):
     process = psutil.Process(os.getpid())
     ram_gb = process.memory_info().rss / 1024**3
@@ -266,7 +238,6 @@ def print_detailed_memory(message=""):
             total = torch.cuda.get_device_properties(i).total_memory / 1024**3
             logger.debug(f"{message} 🎮 GPU {i}: {allocated:.2f}/{total:.2f} GB allocated, {reserved:.2f} GB reserved")
 
-
 def set_seed(seed=42):
     random.seed(seed)
     np.random.seed(seed)
@@ -276,7 +247,6 @@ def set_seed(seed=42):
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
     logger.debug(f"Random seed set to {seed}")
-
 
 def print_trainable_parameters(model):
     trainable_params = 0
@@ -289,7 +259,6 @@ def print_trainable_parameters(model):
     logger.debug(
         f"Trainable params: {trainable_params} || All params: {all_param} || Trainable %: {trainable_percentage:.4f}%"
     )
-
 
 def get_text_dataset(behavior='power-seeking', train=True):
 
@@ -328,11 +297,9 @@ def get_text_dataset(behavior='power-seeking', train=True):
     print_detailed_memory(f"{dataset_type} text loading complete")
     return dataset
 
-
 def get_audio_dataset(behavior='jailbreak', train=True, force_empty_prompt=False):
 
     raise ValueError("CrossSteer vector training uses the shared text AdvBench split. Run with --input_modality text.")
-
 
 def build_multimodal_dataset(text_behavior, audio_behavior, train=True):
 
@@ -343,7 +310,6 @@ def build_multimodal_dataset(text_behavior, audio_behavior, train=True):
         f"✅ Combined multimodal dataset built: text={len(text_ds)} + audio={len(audio_ds)} => total={len(combined)}"
     )
     return combined
-
 
 def determine_precision():
 
@@ -357,9 +323,7 @@ def determine_precision():
     if bf16_supported:
         return {"bf16": True, "fp16": False}, torch.bfloat16
 
-
     return {"bf16": False, "fp16": True}, torch.float16
-
 
 def resolve_model_load_mode(script_args, precision_flags, default_dtype):
 
@@ -434,7 +398,6 @@ def resolve_model_load_mode(script_args, precision_flags, default_dtype):
 
     return load_kwargs, chosen_dtype, precision_flags, mode, total_mem_gb
 
-
 @dataclass
 class ScriptArguments:
     beta: Optional[float] = field(default=0.1)
@@ -467,7 +430,6 @@ class ScriptArguments:
         default=None,
         metadata={"help": "Resume training from a specified vector epoch. For example, 40 loads vec_ep40_layer10.pt and starts from epoch 41."}
     )
-
 
 if __name__ == "__main__":
     logger.debug("🎬 Starting unified training script...")
@@ -531,8 +493,6 @@ if __name__ == "__main__":
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
-
-
     use_swanlab = (script_args.report_to or "").lower() == "swanlab"
     if use_swanlab:
         model_name_only = os.path.basename(script_args.model_name_or_path.rstrip("/"))
@@ -555,7 +515,6 @@ if __name__ == "__main__":
         )
         logger.debug("✅ SwanLab initialized")
 
-
     gc.collect()
     torch.cuda.empty_cache()
 
@@ -570,7 +529,6 @@ if __name__ == "__main__":
     if load_kwargs.get("device_map") is None:
         model = model.to("cuda:0")
     model.config.torch_dtype = target_dtype
-
 
     model.config.use_cache = False
 
@@ -588,15 +546,11 @@ if __name__ == "__main__":
 
         wrapped_layer = wrapped_layer.to(target_device)
 
-
-
         wrapped_layer.vec.data = wrapped_layer.vec.data.to(torch.float32)
         wrapped_layer.initial_vec = wrapped_layer.initial_vec.to(torch.float32)
 
-
         wrapped_layer.save_initial_vec()
         logger.debug(f"💾 Saved initial steering vector as reference (all zeros, FP32)")
-
 
         if script_args.resume_from_epoch is not None:
 
@@ -613,9 +567,7 @@ if __name__ == "__main__":
                     loaded_vec = torch.load(vec_path, map_location="cpu")
                     logger.debug(f"   Loaded vector shape: {loaded_vec.shape}, dtype: {loaded_vec.dtype}")
 
-
                     wrapped_layer.vec.data.copy_(loaded_vec.to(dtype=wrapped_layer.vec.dtype, device=wrapped_layer.vec.device))
-
 
                     wrapped_layer.initial_vec.copy_(loaded_vec.to(dtype=torch.float32, device=wrapped_layer.vec.device))
 
@@ -630,7 +582,6 @@ if __name__ == "__main__":
             else:
                 logger.error(f"❌ Vector file not found: {vec_path}")
                 logger.error(f"   Please check if the file exists and the epoch number is correct")
-
 
                 layer_dir = os.path.join(vec_dir, f"layer{script_args.layer}")
                 if os.path.exists(layer_dir):
@@ -682,7 +633,6 @@ if __name__ == "__main__":
     logger.debug('✅ Model loading and preparation complete.')
     print_detailed_memory("model setup complete")
 
-
     def load_dataset_by_modality(target_modality, train_flag=True):
         if target_modality == "text":
             return get_text_dataset(text_behavior, train_flag)
@@ -699,7 +649,6 @@ if __name__ == "__main__":
     print_detailed_memory("before loading test set")
     test_data = load_dataset_by_modality(modality, False)
     print_detailed_memory("after loading test set")
-
 
     logger.debug(f"Train dataset first example: {train_data[0]}")
     logger.debug(f"Test dataset first example: {test_data[0]}")
@@ -740,13 +689,10 @@ if __name__ == "__main__":
     logger.debug("🏃 Initializing CrossSteer text trainer...")
     print_detailed_memory("before initializing trainer")
 
-
     gc.collect()
     torch.cuda.empty_cache()
 
-
     logger.debug(f"🔧 CUDA_VISIBLE_DEVICES={os.environ.get('CUDA_VISIBLE_DEVICES', '<unset>')}")
-
 
     import resource
 
@@ -759,8 +705,6 @@ if __name__ == "__main__":
             logger.debug("✅ set memory soft limit to 100GB")
     except Exception as e:
         logger.warning(f"⚠️  failed to set memory limit: {e}")
-
-
 
     dpo_trainer = CrossSteerTextTrainer(
         model,
@@ -781,7 +725,6 @@ if __name__ == "__main__":
     logger.debug("✅ Trainer initialized successfully")
     print_detailed_memory("after initializing trainer")
 
-
     if script_args.resume_from_epoch is not None:
         dpo_trainer.epoch_for_saving_vec = script_args.resume_from_epoch
         logger.debug(f"✅ Set trainer starting epoch to {script_args.resume_from_epoch}")
@@ -791,7 +734,6 @@ if __name__ == "__main__":
     logger.debug("🎯 Starting training...")
     print_trainable_parameters(model)
     print_detailed_memory("before training starts")
-
 
     torch.cuda.empty_cache()
     gc.collect()
@@ -822,7 +764,6 @@ if __name__ == "__main__":
         logger.error(f"❌ Failed to save steering vector: {e}")
         import traceback
         traceback.print_exc()
-
 
     if use_swanlab:
         swanlab.finish()

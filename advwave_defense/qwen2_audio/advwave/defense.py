@@ -6,7 +6,6 @@ import librosa
 import torch
 import torchaudio
 
-
 class BlockWrapper(torch.nn.Module):
     def __init__(self, block, steering_vector=None, multiplier=0.0):
         super().__init__()
@@ -42,7 +41,6 @@ class BlockWrapper(torch.nn.Module):
         except AttributeError:
             return getattr(self.block, name)
 
-
 def load_steering_vector(vector_path, device, dtype=torch.float16):
     if not os.path.exists(vector_path):
         raise FileNotFoundError(f"Steering vector not found: {vector_path}")
@@ -51,14 +49,12 @@ def load_steering_vector(vector_path, device, dtype=torch.float16):
     vector = torch.load(vector_path, map_location=device)
     return vector.to(dtype=dtype)
 
-
 def apply_steering_to_model(model, steering_vector, layer_idx):
     target_layer = model.language_model.model.layers[layer_idx]
     wrapped_layer = BlockWrapper(target_layer, steering_vector=steering_vector, multiplier=0.0)
     wrapped_layer = wrapped_layer.to(next(model.parameters()).device)
     model.language_model.model.layers[layer_idx] = wrapped_layer
     return wrapped_layer
-
 
 def inference_with_audio(model, processor, audio_path, device, prompt="", max_new_tokens=200):
     audio_url = "file:" + audio_path

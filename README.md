@@ -32,7 +32,6 @@ External experiment logging is disabled by default. Pass `--report_to swanlab` t
 - `data/`: AdvBench text split files used for training and inference.
 - `scripts/check_vectors.py`: steering-vector loading check.
 
-
 ## Training
 
 ```bash

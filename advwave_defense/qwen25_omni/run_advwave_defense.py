@@ -22,7 +22,6 @@ from advwave.defense import (
 from advwave.judge import judge_outcome
 from advwave.paths import OUTPUT_DIR, TRANSFORMERS_DIR
 
-
 use_third_party = False
 try:
     from transformers import Qwen2_5OmniForConditionalGeneration
@@ -37,7 +36,6 @@ DEFAULT_MODEL = os.environ.get("QWEN25_OMNI_MODEL", "")
 DEFAULT_VECTORS = [
     os.path.join(REPO_ROOT, "vectors", "qwen25_omni", "layer13", "vec_ep400_layer13.pt"),
 ]
-
 
 def patch_qwen2_5_omni_load_speakers() -> None:
 
@@ -56,7 +54,6 @@ def patch_qwen2_5_omni_load_speakers() -> None:
         print("✅ Patched Qwen2.5-Omni load_speakers")
     except Exception as err:
         print(f"⚠️  Failed to patch load_speakers: {err}")
-
 
 def ensure_qwen_speaker_map(model, default_speaker: str = "Chelsie") -> None:
 
@@ -112,11 +109,9 @@ def patch_qwen_omni_forward(model) -> None:
             return model.thinker(*args, **kwargs)
         model.forward = _forward
 
-
 def _vector_tag(path: str) -> str:
     base = os.path.basename(path)
     return os.path.splitext(base)[0]
-
 
 def _ensure_output_dir(base_output: str, vector_tag: str, attack: str) -> str:
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -124,12 +119,10 @@ def _ensure_output_dir(base_output: str, vector_tag: str, attack: str) -> str:
     os.makedirs(out_dir, exist_ok=True)
     return out_dir
 
-
 def _save_jsonl(path: str, rows: List[dict]) -> None:
     with open(path, "w", encoding="utf-8") as f:
         for row in rows:
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
-
 
 def _load_jsonl(path: str) -> List[dict]:
     rows: List[dict] = []
@@ -145,7 +138,6 @@ def _load_jsonl(path: str) -> List[dict]:
             except json.JSONDecodeError:
                 print(f"⚠️  Skipping malformed jsonl line in {path}")
     return rows
-
 
 def _build_resume_dataset(
     base_dataset: List[dict],
@@ -208,7 +200,6 @@ def _build_resume_dataset(
             }
         )
     return dataset, processed_ids
-
 
 def run_for_attack(
     attack: str,
@@ -529,7 +520,6 @@ def run_for_attack(
     print(f"Results saved to {output_dir}")
     return summary
 
-
 def main():
     parser = argparse.ArgumentParser(description="AdvWave defense runner (audio_ours, audio_ours_universal)")
     parser.add_argument(
@@ -645,7 +635,6 @@ def main():
 
         del model
         torch.cuda.empty_cache()
-
 
 if __name__ == "__main__":
     main()

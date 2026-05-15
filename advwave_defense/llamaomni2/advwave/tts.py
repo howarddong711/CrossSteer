@@ -26,7 +26,6 @@ REFERENCE_TEXT = "This is a reference audio for text to speech synthesis"
 
 _cached_voice_uri: Optional[str] = None
 
-
 def upload_reference_voice(api_key: str) -> str:
     global _cached_voice_uri
 
@@ -61,7 +60,6 @@ def upload_reference_voice(api_key: str) -> str:
     _cached_voice_uri = uri
     print(f"Voice uploaded: {uri}")
     return uri
-
 
 def prompt2audio(
     prompt: str,
@@ -150,7 +148,6 @@ def prompt2audio(
     output_path = Path(file_name)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-
     if audio_bytes[:3] == b"ID3" or audio_bytes[:2] == b"\xff\xfb":
         mp3_path = output_path.with_suffix(".mp3")
         mp3_path.write_bytes(audio_bytes)
@@ -180,7 +177,6 @@ def prompt2audio(
         time.sleep(float(throttle_seconds))
 
     return file_name
-
 
 def generate_silent_audio(file_name: str, duration: float = 1.0, sample_rate: int = 16000) -> None:
     import numpy as np

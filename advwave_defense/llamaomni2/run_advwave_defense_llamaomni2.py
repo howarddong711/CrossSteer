@@ -26,20 +26,16 @@ from advwave.llamaomni2 import (
 from advwave.paths import OUTPUT_DIR
 from advwave.tts import prompt2audio
 
-
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.abspath(os.path.join(BASE_DIR, "..", ".."))
 DEFAULT_VECTOR_ROOT = os.path.join(REPO_ROOT, "vectors", "llamaomni2")
 
-
 def _vector_path(vector_root: str, layer: int, epoch: int) -> str:
     return os.path.join(vector_root, f"layer{layer}", f"vec_ep{epoch}_layer{layer}.pt")
-
 
 def _vector_tag(path: str) -> str:
     base = os.path.basename(path)
     return os.path.splitext(base)[0]
-
 
 def _ensure_output_dir(base_output: str, vector_tag: str, attack: str) -> str:
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -47,12 +43,10 @@ def _ensure_output_dir(base_output: str, vector_tag: str, attack: str) -> str:
     os.makedirs(out_dir, exist_ok=True)
     return out_dir
 
-
 def _save_jsonl(path: str, rows: List[dict]) -> None:
     with open(path, "w", encoding="utf-8") as f:
         for row in rows:
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
-
 
 def _load_jsonl(path: str) -> List[dict]:
     if not os.path.exists(path):
@@ -65,20 +59,16 @@ def _load_jsonl(path: str) -> List[dict]:
                 rows.append(json.loads(line))
     return rows
 
-
 def _normalize_text(text: str) -> str:
     return " ".join((text or "").replace("\r\n", "\n").replace("\r", "\n").split())
-
 
 def _atomic_rewrite_jsonl(path: str, rows: List[dict]) -> None:
     tmp_path = path + ".tmp"
     _save_jsonl(tmp_path, rows)
     os.replace(tmp_path, path)
 
-
 def _cache_key(row: dict) -> tuple:
     return ("question", _normalize_text(row.get("question", "")))
-
 
 def _dedup_dataset_by_prompt(dataset: List[dict]) -> List[dict]:
     deduped = []
@@ -92,7 +82,6 @@ def _dedup_dataset_by_prompt(dataset: List[dict]) -> List[dict]:
         deduped.append(item)
         seen.add(key)
     return deduped
-
 
 def _load_dataset_csv(path: str, dedup_prompts: bool = False) -> List[dict]:
     dataset = []
@@ -114,11 +103,9 @@ def _load_dataset_csv(path: str, dedup_prompts: bool = False) -> List[dict]:
         dataset = _dedup_dataset_by_prompt(dataset)
     return dataset
 
-
 def _valid_cached_attack(row: dict) -> bool:
     adv_path = row.get("adv_audio_path")
     return bool(adv_path) and os.path.exists(str(adv_path)) and not row.get("skipped", False)
-
 
 def _load_valid_attack_cache(attack_cache_dir: str | None) -> List[dict]:
     if not attack_cache_dir:
@@ -134,7 +121,6 @@ def _load_valid_attack_cache(attack_cache_dir: str | None) -> List[dict]:
         seen.add(key)
     return valid
 
-
 def _apply_cached_raw_audio_paths(dataset: List[dict], attack_cache_dir: str | None) -> None:
     cached_by_key = {
         _cache_key(row): row
@@ -145,7 +131,6 @@ def _apply_cached_raw_audio_paths(dataset: List[dict], attack_cache_dir: str | N
         audio_path = cached.get("audio_path") if cached else None
         if audio_path and os.path.exists(str(audio_path)):
             sample["audio_path"] = audio_path
-
 
 def _apply_existing_tts_audio_paths_by_prompt(dataset: List[dict], seed: int) -> None:
     existing_dataset, _ = load_test_dataset(seed=seed)
@@ -166,14 +151,12 @@ def _apply_existing_tts_audio_paths_by_prompt(dataset: List[dict], seed: int) ->
             applied += 1
     print(f"Reused existing TTS audio by prompt for {applied}/{len(dataset)} sample(s).")
 
-
 def _stable_audio_path(sample: dict) -> str:
     audio_dir = os.path.join(build_audio_paths(), "stable_by_source")
     os.makedirs(audio_dir, exist_ok=True)
     source = str(sample.get("source", "unknown")).replace(os.sep, "_")
     source_index = int(sample.get("source_index", sample.get("id", -1)))
     return os.path.join(audio_dir, f"{source}_{source_index}.wav")
-
 
 def _ensure_audio_files_stable(
     dataset: List[dict],
@@ -193,7 +176,6 @@ def _ensure_audio_files_stable(
             )
         audio_paths.append(audio_path)
     return audio_paths
-
 
 def _prepare_attack_dataset(dataset: List[dict], args) -> List[dict]:
     target_count = len(dataset)
@@ -233,7 +215,6 @@ def _prepare_attack_dataset(dataset: List[dict], args) -> List[dict]:
     print(f"Loaded {len(cached_rows)} cached attack(s); prepared {len(prepared)}/{target_count} sample(s).")
     return prepared
 
-
 def _print_outcome(outcome: dict) -> None:
     if outcome["is_jailbreak"]:
         print("Jailbreak")
@@ -243,7 +224,6 @@ def _print_outcome(outcome: dict) -> None:
         print("Invalid")
     else:
         print("Refusal")
-
 
 def _write_summary(output_dir: str, results: List[dict], multipliers: List[float], args, extra_config=None):
     extra_config = extra_config or {}
@@ -322,7 +302,6 @@ def _write_summary(output_dir: str, results: List[dict], multipliers: List[float
     with open(os.path.join(output_dir, "summary.json"), "w", encoding="utf-8") as f:
         json.dump(summary, f, indent=2, ensure_ascii=False)
     return summary
-
 
 def generate_audio_ours_attack_cache(
     dataset: List[dict],
@@ -474,7 +453,6 @@ def generate_audio_ours_attack_cache(
     _write_summary(output_dir, results, [], args, {"stage": "attack_cache"})
     return results
 
-
 def run_cached_defense_for_layer(
     layer: int,
     attack_cache_dir: str,
@@ -541,7 +519,6 @@ def run_cached_defense_for_layer(
         {"stage": "cached_defense", "layer": layer, "attack_cache_dir": attack_cache_dir},
     )
     print(f"Layer {layer} cached-defense results saved to {output_dir}")
-
 
 def run_for_attack(
     attack: str,
@@ -863,7 +840,6 @@ def run_for_attack(
     print(f"Results saved to {output_dir}")
     return summary
 
-
 def parse_args():
     parser = argparse.ArgumentParser(description="AdvWave defense runner for LLaMA-Omni2")
     parser.add_argument(
@@ -899,7 +875,6 @@ def parse_args():
     if not args.model_name:
         parser.error("--model_name is required.")
     return args
-
 
 def main():
     args = parse_args()
@@ -995,7 +970,6 @@ def main():
 
     del model
     torch.cuda.empty_cache()
-
 
 if __name__ == "__main__":
     main()

@@ -17,7 +17,6 @@ SILICONFLOW_API_KEY = os.getenv("SILICONFLOW_API_KEY") or os.getenv("DEEPSEEK_AP
 SILICONFLOW_BASE_URL = os.getenv("SILICONFLOW_BASE_URL", "https://api.siliconflow.cn/v1")
 SILICONFLOW_MODEL = os.getenv("SILICONFLOW_MODEL", "deepseek-ai/DeepSeek-V3.2")
 
-
 def _extract_json(text: str) -> str:
     t = (text or "").strip()
     if "```json" in t:
@@ -28,7 +27,6 @@ def _extract_json(text: str) -> str:
     if match:
         return match.group(0).strip()
     return t
-
 
 def judge_response_3way_with_llm(
     prompt: str,
@@ -82,7 +80,6 @@ Return strict JSON only:
             continue
 
     return "judge_error", "ERROR: Max retries exceeded"
-
 
 def judge_outcome(prompt: str, response: str, max_retries: int = 3) -> dict:
     label, reason = judge_response_3way_with_llm(prompt, response, max_retries=max_retries)

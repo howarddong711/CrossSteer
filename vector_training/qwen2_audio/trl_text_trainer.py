@@ -50,10 +50,8 @@ from trl.trainer.utils import (
     trl_sanitze_kwargs_for_tagging,
 )
 
-
 if is_peft_available():
     from peft import PeftModel, get_peft_model, prepare_model_for_kbit_training
-
 
 if is_wandb_available():
     import wandb
@@ -61,14 +59,7 @@ if is_wandb_available():
 if is_deepspeed_available():
     import deepspeed
 
-
 class CrossSteerTextTrainer(Trainer):
-
-
-
-
-
-
 
     _tag_names = ["trl", "dpo", "crosssteer", "text-only"]
 
@@ -287,7 +278,6 @@ class CrossSteerTextTrainer(Trainer):
         else:
             self.is_encoder_decoder = args.is_encoder_decoder
 
-
         self.input_modality = input_modality
         self.is_vision_model = False
         self.is_audio_model = input_modality in {"audio", "multimodal"}
@@ -324,8 +314,6 @@ class CrossSteerTextTrainer(Trainer):
             )
             args.precompute_ref_log_probs = precompute_ref_log_probs
 
-
-
         if ref_model is not None:
 
             self.ref_model = ref_model
@@ -336,7 +324,6 @@ class CrossSteerTextTrainer(Trainer):
 
             self.ref_model = None
         else:
-
 
             self.ref_model = create_reference_model(model)
 
@@ -493,7 +480,6 @@ class CrossSteerTextTrainer(Trainer):
         self.multiplier_counts = {-1.0: 0, 1.0: 0}
         self._last_saved_vec = None
 
-
         print("🔄 Start preprocessing dataset (avoid internal Trainer preprocessing)...")
         train_dataset = self._preprocess_dataset(train_dataset, "train set")
         if eval_dataset is not None:
@@ -505,8 +491,6 @@ class CrossSteerTextTrainer(Trainer):
             else:
                 eval_dataset = self._preprocess_dataset(eval_dataset, "validation set")
         print("✅ Dataset preprocessing complete, now initializing Trainer...")
-
-
 
         super().__init__(
             model=model,
@@ -522,14 +506,12 @@ class CrossSteerTextTrainer(Trainer):
             preprocess_logits_for_metrics=preprocess_logits_for_metrics,
         )
 
-
         if hasattr(self, 'model') and isinstance(self.model, torch.nn.DataParallel):
             import logging
             logger = logging.getLogger(__name__)
             logger.warning("🔧 Detected DataParallel wrapper, removing it...")
             self.model = self.model.module
             logger.info(f"✅ Model unwrapped, device: {next(self.model.parameters()).device}")
-
 
         if hasattr(self.model, "add_model_tags"):
             self.model.add_model_tags(self._tag_names)
@@ -539,7 +521,6 @@ class CrossSteerTextTrainer(Trainer):
                 "Your `Trainer` does not have an `accelerator` object. Consider upgrading `transformers`."
             )
 
-
         if self.is_deepspeed_enabled:
             if self.accelerator.state.deepspeed_plugin.zero_stage == 3 and self.precompute_ref_log_probs:
                 raise ValueError(
@@ -547,7 +528,6 @@ class CrossSteerTextTrainer(Trainer):
                 )
 
         if self.ref_model is None:
-
 
             if not (self.is_peft_model or self.precompute_ref_log_probs):
                 import logging
@@ -585,15 +565,6 @@ class CrossSteerTextTrainer(Trainer):
 
     def _preprocess_dataset(self, dataset: Dataset, name: str = "dataset") -> Dataset:
 
-
-
-
-
-
-
-
-
-
         import gc
         from datasets import concatenate_datasets
 
@@ -611,10 +582,8 @@ class CrossSteerTextTrainer(Trainer):
         processed_parts = []
         total_batches = (dataset_size + batch_size - 1) // batch_size
 
-
         from tqdm import tqdm
         import logging
-
 
         datasets_logger = logging.getLogger("datasets")
         original_level = datasets_logger.level
@@ -626,9 +595,7 @@ class CrossSteerTextTrainer(Trainer):
                 end_idx = min(start_idx + batch_size, dataset_size)
                 current_batch_size = end_idx - start_idx
 
-
                 batch_dataset = dataset.select(range(start_idx, end_idx))
-
 
                 processed_batch = batch_dataset.map(
                     self.tokenize_row,
@@ -643,28 +610,22 @@ class CrossSteerTextTrainer(Trainer):
 
                 processed_parts.append(processed_batch)
 
-
                 pbar.update(current_batch_size)
-
 
                 del batch_dataset
                 gc.collect()
                 if torch.cuda.is_available():
                     torch.cuda.empty_cache()
 
-
         datasets_logger.setLevel(original_level)
-
 
         print(f"   🔗 Merging batches...")
         result_dataset = concatenate_datasets(processed_parts)
-
 
         del processed_parts
         gc.collect()
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
-
 
         original_len = len(result_dataset)
         result_dataset = result_dataset.filter(
@@ -679,7 +640,6 @@ class CrossSteerTextTrainer(Trainer):
         else:
             print(f"   ✅ {name} processing complete: {filtered_len} samples")
 
-
         if filtered_len > 0:
             sample = result_dataset[0]
             vocab_size = self.tokenizer.vocab_size
@@ -687,7 +647,6 @@ class CrossSteerTextTrainer(Trainer):
                   f"chosen length={len(sample.get('chosen_input_ids', []))}, "
                   f"rejected length={len(sample.get('rejected_input_ids', []))}")
             print(f"   📖 Tokenizer vocab size: {vocab_size}")
-
 
             for key in ["prompt_input_ids", "chosen_input_ids", "rejected_input_ids"]:
                 if key in sample:
@@ -709,11 +668,8 @@ class CrossSteerTextTrainer(Trainer):
 
     def _wrap_model(self, model, training=True, dataloader=None):
 
-
-
         import logging
         logger = logging.getLogger(__name__)
-
 
         if torch.cuda.device_count() > 1 and not isinstance(model, torch.nn.DataParallel):
             logger.warning(f"🚫 Detected {torch.cuda.device_count()} GPU(s), but DataParallel is forcibly disabled")
@@ -835,7 +791,6 @@ class CrossSteerTextTrainer(Trainer):
             if waveform.shape[0] > 1:
                 waveform = waveform.mean(dim=0, keepdim=True)
 
-
             expected_sr = None
             try:
                 if hasattr(self.processor, "feature_extractor") and hasattr(self.processor.feature_extractor, "sampling_rate"):
@@ -868,12 +823,6 @@ class CrossSteerTextTrainer(Trainer):
 
             def _call_audio_processor(text: str, max_len: int):
 
-
-
-
-
-
-
                 common_kwargs = dict(
                     text=text,
                     sampling_rate=sampling_rate,
@@ -882,7 +831,6 @@ class CrossSteerTextTrainer(Trainer):
                     truncation=False,
                 )
 
-
                 try:
                     out = audio_processor(audio=waveform_np, **common_kwargs)
                     if out is not None and out.get("input_features") is not None:
@@ -890,14 +838,12 @@ class CrossSteerTextTrainer(Trainer):
                 except TypeError:
                     pass
 
-
                 try:
                     out = audio_processor(audios=waveform_np, **common_kwargs)
                     if out is not None and out.get("input_features") is not None:
                         return out
                 except TypeError:
                     pass
-
 
                 try:
                     out = audio_processor(audio=[waveform_np], **common_kwargs)
@@ -912,9 +858,7 @@ class CrossSteerTextTrainer(Trainer):
                 except TypeError:
                     pass
 
-
                 return out
-
 
             chosen_text = prompt_text + " " + chosen
             chosen_inputs = _call_audio_processor(chosen_text, max_length)
@@ -927,7 +871,6 @@ class CrossSteerTextTrainer(Trainer):
             prompt_attention_mask = prompt_only_inputs["attention_mask"][0].tolist()
             prompt_len = len(prompt_input_ids)
 
-
             chosen_input_ids = chosen_inputs["input_ids"][0].tolist()
             chosen_attention_mask = chosen_inputs["attention_mask"][0].tolist()
             chosen_labels = chosen_input_ids.copy()
@@ -937,7 +880,6 @@ class CrossSteerTextTrainer(Trainer):
             rejected_attention_mask = rejected_inputs["attention_mask"][0].tolist()
             rejected_labels = rejected_input_ids.copy()
             rejected_labels[:prompt_len] = [-100] * min(prompt_len, len(rejected_labels))
-
 
             input_features = chosen_inputs.get("input_features")
             feature_attention_mask = chosen_inputs.get("feature_attention_mask")
@@ -969,8 +911,6 @@ class CrossSteerTextTrainer(Trainer):
 
     def _pad_tokens_to_max_length(self, tokens: torch.Tensor, max_length: Optional[int] = None) -> torch.Tensor:
 
-
-
         if max_length is None:
             return tokens
 
@@ -983,7 +923,6 @@ class CrossSteerTextTrainer(Trainer):
 
         pad_shape = list(tokens.shape)
         pad_shape[1] = pad_length
-
 
         if (tokens == self.label_pad_token_id).any():
             pad_value = self.label_pad_token_id
@@ -1010,10 +949,7 @@ class CrossSteerTextTrainer(Trainer):
         device: Optional[str] = None,
     ) -> Dict[str, torch.LongTensor]:
 
-
-
         concatenated_batch = {}
-
 
         processed_batch = {}
         for k, v in batch.items():
@@ -1025,11 +961,9 @@ class CrossSteerTextTrainer(Trainer):
             else:
                 processed_batch[k] = v
 
-
         chosen_len = processed_batch["chosen_input_ids"].shape[1]
         rejected_len = processed_batch["rejected_input_ids"].shape[1]
         max_length = max(chosen_len, rejected_len)
-
 
         chosen_input_ids = self._pad_tokens_to_max_length(
             processed_batch["chosen_input_ids"],
@@ -1044,7 +978,6 @@ class CrossSteerTextTrainer(Trainer):
             max_length
         )
 
-
         rejected_input_ids = self._pad_tokens_to_max_length(
             processed_batch["rejected_input_ids"],
             max_length
@@ -1057,7 +990,6 @@ class CrossSteerTextTrainer(Trainer):
             processed_batch["rejected_labels"],
             max_length
         )
-
 
         concatenated_batch["concatenated_input_ids"] = torch.cat(
             [chosen_input_ids, rejected_input_ids],
@@ -1074,8 +1006,6 @@ class CrossSteerTextTrainer(Trainer):
             dim=0,
         ).to(device=device)
 
-
-
         if "input_features" in processed_batch and processed_batch["input_features"] is not None:
             input_features = processed_batch["input_features"]
             if not isinstance(input_features, torch.Tensor):
@@ -1084,8 +1014,6 @@ class CrossSteerTextTrainer(Trainer):
                 input_features = input_features.unsqueeze(0)
             if device is not None:
                 input_features = input_features.to(device=device)
-
-
 
             expected_mel_len = getattr(self, "expected_mel_len", 3000)
             if input_features.ndim == 3:
@@ -1106,7 +1034,6 @@ class CrossSteerTextTrainer(Trainer):
                     feature_attention_mask = feature_attention_mask.unsqueeze(0)
                 if device is not None:
                     feature_attention_mask = feature_attention_mask.to(device=device)
-
 
                 cur_len = int(feature_attention_mask.shape[-1])
                 if cur_len < expected_mel_len:
@@ -1278,9 +1205,7 @@ class CrossSteerTextTrainer(Trainer):
             logits = logits[:, :-1, :]
         loss_mask = labels != label_pad_token_id
 
-
         labels[labels == label_pad_token_id] = 0
-
 
         if torch.isnan(logits).any() or torch.isinf(logits).any():
             logger.error(f"❌ NaN/Inf detected in logits!")
@@ -1299,8 +1224,6 @@ class CrossSteerTextTrainer(Trainer):
         self, model: nn.Module, batch: Dict[str, Union[List, torch.LongTensor]]
     ) -> Tuple[torch.FloatTensor, torch.FloatTensor, torch.FloatTensor, torch.FloatTensor, torch.FloatTensor]:
 
-
-
         if model is self.ref_model:
             target_device = next(model.parameters()).device
         else:
@@ -1314,9 +1237,6 @@ class CrossSteerTextTrainer(Trainer):
             padding_value=self.padding_value,
             device=target_device,
         )
-
-
-
 
         if self.input_modality == "audio":
             if "input_features" not in concatenated_batch:
@@ -1334,7 +1254,6 @@ class CrossSteerTextTrainer(Trainer):
                     f"input_features.shape={tuple(concatenated_batch['input_features'].shape)}, "
                     f"input_ids.shape={tuple(concatenated_batch['concatenated_input_ids'].shape)}"
                 )
-
 
             if not hasattr(self, "_printed_audio_feature_debug"):
                 self._printed_audio_feature_debug = True
@@ -1366,7 +1285,6 @@ class CrossSteerTextTrainer(Trainer):
 
         if self.aux_loss_enabled:
             model_kwargs["output_router_logits"] = True
-
 
         if "input_features" in concatenated_batch:
             model_kwargs["input_features"] = concatenated_batch["input_features"]
@@ -1423,18 +1341,9 @@ class CrossSteerTextTrainer(Trainer):
 
     def get_batch_loss_metrics(self, model, inputs, train_eval="train"):
 
-
-
-
-
-
-
         metrics = {}
 
-
         unwrapped_model = model.module if isinstance(model, torch.nn.DataParallel) else model
-
-
 
         with torch.no_grad():
             if self.ref_model is None:
@@ -1446,12 +1355,10 @@ class CrossSteerTextTrainer(Trainer):
 
                     wrapped_layer = unwrapped_model.language_model.model.layers[self.layer]
 
-
                     wrapped_layer.use_reference_mode(True)
                     wrapped_layer.set_multiplier(0.0)
 
                     ref_output = self.concatenated_forward(self.model, inputs)
-
 
                     wrapped_layer.use_reference_mode(False)
             else:
@@ -1466,7 +1373,6 @@ class CrossSteerTextTrainer(Trainer):
         del ref_output
         if train_eval == "train":
             torch.cuda.empty_cache()
-
 
         unwrapped_model.language_model.model.layers[self.layer].set_multiplier(1.0)
 
@@ -1489,7 +1395,6 @@ class CrossSteerTextTrainer(Trainer):
         if train_eval == "train":
             torch.cuda.empty_cache()
 
-
         unwrapped_model.language_model.model.layers[self.layer].set_multiplier(-1.0)
 
         forward_output_sub = self.concatenated_forward(model, inputs)
@@ -1509,15 +1414,11 @@ class CrossSteerTextTrainer(Trainer):
         if train_eval == "train":
             torch.cuda.empty_cache()
 
-
         unwrapped_model.language_model.model.layers[self.layer].set_multiplier(0.0)
-
 
         loss = losses_add.mean() + losses_sub.mean()
 
-
         reward_accuracies = (chosen_rewards_add > rejected_rewards_add).float()
-
 
         prefix = "eval_" if train_eval == "eval" else ""
         metrics[f"{prefix}rewards/chosen"] = chosen_rewards_add.mean().cpu()
@@ -1528,7 +1429,6 @@ class CrossSteerTextTrainer(Trainer):
         metrics[f"{prefix}logps/chosen"] = policy_chosen_logps_add.detach().mean().cpu()
         metrics[f"{prefix}logits/rejected"] = policy_rejected_logits.detach().mean().cpu()
         metrics[f"{prefix}logits/chosen"] = policy_chosen_logits.detach().mean().cpu()
-
 
         metrics[f"{prefix}rewards/chosen_add"] = chosen_rewards_add.mean().cpu()
         metrics[f"{prefix}rewards/rejected_add"] = rejected_rewards_add.mean().cpu()
@@ -1632,7 +1532,6 @@ class CrossSteerTextTrainer(Trainer):
             print(f'   Vec preview: {steer_vec[:10]}')
             print(f'   Vec dtype: {steer_vec.dtype}')
             print(f'   Vec norm: {steer_vec.norm().item():.4f}')
-
 
             vec_norm = steer_vec.norm().item()
             vec_l1 = steer_vec.abs().sum().item()

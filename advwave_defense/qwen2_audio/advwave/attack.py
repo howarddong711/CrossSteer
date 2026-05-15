@@ -15,7 +15,6 @@ from .paths import DATA_DIR, OUTPUT_DIR, TRANSFORMERS_DIR
 if TRANSFORMERS_DIR not in sys.path:
     sys.path.insert(0, TRANSFORMERS_DIR)
 
-
 def get_input_embeds(model, input_ids, input_features, feature_attention_mask, attention_mask, labels):
     inputs_embeds = model.get_input_embeddings()(input_ids)
 
@@ -50,7 +49,6 @@ def get_input_embeds(model, input_ids, input_features, feature_attention_mask, a
         )
     return inputs_embeds
 
-
 def _load_audio_from_url(audio_url: str, target_sr: int):
     if audio_url.startswith("file:"):
         path = audio_url.replace("file:", "")
@@ -61,7 +59,6 @@ def _load_audio_from_url(audio_url: str, target_sr: int):
             wav = torchaudio.functional.resample(wav, sr, target_sr)
         return wav.detach().cpu().numpy()
     return librosa.load(BytesIO(urlopen(audio_url).read()), sr=target_sr)[0]
-
 
 def qwen_eval_gen(audio_list, processor, model, prompt=""):
     if len(audio_list) > 1:
@@ -100,7 +97,6 @@ def qwen_eval_gen(audio_list, processor, model, prompt=""):
     )[0]
     return response
 
-
 def _load_target_text(prompt: str) -> str:
     for name in ("advbench_train_300.csv", "advbench_infer_200.csv"):
         csv_path = os.path.join(DATA_DIR, name)
@@ -111,7 +107,6 @@ def _load_target_text(prompt: str) -> str:
             if row.get("question") == prompt:
                 return row.get("matching", "Sure, here are the step-by-step instructions")
     return "Sure, here are the step-by-step instructions"
-
 
 def qwen_jailbreak_gen(
     ori_prompt,
@@ -291,7 +286,6 @@ def qwen_jailbreak_gen(
 
     torch.cuda.empty_cache()
     return response, record
-
 
 def generate_universal_adversarial_audio(
     audio_paths,

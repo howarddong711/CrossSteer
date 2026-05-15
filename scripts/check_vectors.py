@@ -5,7 +5,6 @@ from pathlib import Path
 
 import torch
 
-
 def describe_vector(path: Path) -> str:
     try:
         vec = torch.load(path, map_location="cpu", weights_only=True)
@@ -16,7 +15,6 @@ def describe_vector(path: Path) -> str:
     flat = vec.float().reshape(-1)
     norm = torch.linalg.vector_norm(flat).item()
     return f"{path}: shape={tuple(vec.shape)} dtype={vec.dtype} norm={norm:.6f}"
-
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Validate CrossSteer .pt steering vectors.")
@@ -40,7 +38,5 @@ def main() -> None:
         print(describe_vector(path))
     print(f"checked={len(paths)} root={os.path.abspath(root)}")
 
-
 if __name__ == "__main__":
     main()
-

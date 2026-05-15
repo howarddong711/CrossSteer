@@ -7,7 +7,6 @@ from typing import Dict, List
 
 import torch
 
-
 def _ensure_torchvision_nms_schema():
     global _TORCHVISION_SCHEMA_LIB
     try:
@@ -16,7 +15,6 @@ def _ensure_torchvision_nms_schema():
     except Exception:
         pass
 
-
 _ensure_torchvision_nms_schema()
 
 from advwave.attack import qwen_jailbreak_gen
@@ -24,9 +22,7 @@ from advwave.data import ensure_audio_files, load_test_dataset
 from advwave.paths import DATA_DIR
 from run_advwave_defense import ensure_qwen_speaker_map, patch_qwen2_5_omni_load_speakers
 
-
 DEFAULT_MODEL = os.environ.get("QWEN25_OMNI_MODEL", "")
-
 
 def parse_api_config(path: str) -> Dict[str, str]:
     if not path:
@@ -63,7 +59,6 @@ def parse_api_config(path: str) -> Dict[str, str]:
         env["SILICONFLOW_MODEL"] = str(model)
     return env
 
-
 def loss_summary(losses):
     if not losses:
         return {}
@@ -80,7 +75,6 @@ def loss_summary(losses):
         "last_10_mean": sum(float(x) for x in losses[-10:]) / min(10, len(losses)),
     }
 
-
 def resolve_audio_paths(dataset_by_id: Dict[int, Dict], ids: List[int], audio_dir: str = "") -> List[str]:
     if not audio_dir:
         return ensure_audio_files([dataset_by_id[i] for i in ids], generate_tts=False)
@@ -90,7 +84,6 @@ def resolve_audio_paths(dataset_by_id: Dict[int, Dict], ids: List[int], audio_di
     if missing:
         raise FileNotFoundError(f"Missing audio files: {missing[:10]}")
     return paths
-
 
 def main():
     parser = argparse.ArgumentParser()
@@ -211,7 +204,6 @@ def main():
             torch.cuda.empty_cache()
 
     print(f"Done. Results: {results_path}", flush=True)
-
 
 if __name__ == "__main__":
     main()
