@@ -182,7 +182,7 @@ def get_text_dataset(behavior='power-seeking', train=True):
 
     dataset_type = "train" if train else "test"
     logger.debug(f"📊 Loading text data: behavior={behavior}, type={dataset_type}")
-    print_detailed_memory(f"{dataset_type} dataset loading (before) ")
+    print_detailed_memory(f"{dataset_type} dataset loading (before)")
 
     data_file = resolve_advbench_split(train)
 
@@ -212,7 +212,7 @@ def get_text_dataset(behavior='power-seeking', train=True):
         exit(1)
 
     logger.debug(f"✅ {dataset_type.capitalize()} dataset loaded (text), samples: {len(dataset)}")
-    print_detailed_memory(f"{dataset_type} text loading complete ")
+    print_detailed_memory(f"{dataset_type} text loading complete")
     return dataset
 
 
@@ -363,7 +363,7 @@ if __name__ == "__main__":
 
     torch.cuda.empty_cache()
     gc.collect()
-    print_detailed_memory("after program startup ")
+    print_detailed_memory("after program startup")
 
     parser = HfArgumentParser(ScriptArguments)
     script_args = parser.parse_args_into_dataclasses()[0]
@@ -410,7 +410,7 @@ if __name__ == "__main__":
         logger.warning("Current GPU does not support bf16/fp16; training will run in full precision.")
 
     logger.debug("🤖 Loading processors/tokenizers based on modality...")
-    print_detailed_memory("before loading tokenizer/processor ")
+    print_detailed_memory("before loading tokenizer/processor")
 
     processor = None
     if modality == "text":
@@ -448,7 +448,7 @@ if __name__ == "__main__":
     gc.collect()
     torch.cuda.empty_cache()
 
-    print_detailed_memory("before loading main model ")
+    print_detailed_memory("before loading main model")
 
     logger.debug("Loading main model to GPU 0...")
     model = Qwen2AudioForConditionalGeneration.from_pretrained(
@@ -462,7 +462,7 @@ if __name__ == "__main__":
 
     model.config.use_cache = False
 
-    print_detailed_memory("after loading main model ")
+    print_detailed_memory("after loading main model")
     hidden_size = model.config.text_config.hidden_size
     logger.debug(f"📐 Hidden size: {hidden_size}")
 
@@ -547,7 +547,7 @@ if __name__ == "__main__":
     model.config.use_cache = False
     if load_kwargs.get("device_map") is None:
         model = model.to("cuda:0")
-    print_detailed_memory("after wrapping BlockWrapper ")
+    print_detailed_memory("after wrapping BlockWrapper")
 
     logger.debug("✅ Optimization: skip loading a separate reference model and use the main model with multiplier=0 instead")
     logger.debug("   This will save about 50% of GPU memory usage!")
@@ -567,7 +567,7 @@ if __name__ == "__main__":
             frozen_count += 1
     logger.debug(f"   Frozen: {frozen_count} params, Trainable: {trainable_count} params")
     logger.debug('✅ Model loading and preparation complete.')
-    print_detailed_memory("model setup complete ")
+    print_detailed_memory("model setup complete")
 
 
     def load_dataset_by_modality(target_modality, train_flag=True):
@@ -578,14 +578,14 @@ if __name__ == "__main__":
         return build_multimodal_dataset(text_behavior, audio_behavior, train_flag)
 
     logger.debug("📚 Loading training dataset...")
-    print_detailed_memory("before loading training set ")
+    print_detailed_memory("before loading training set")
     train_data = load_dataset_by_modality(modality, True)
-    print_detailed_memory("after loading training set ")
+    print_detailed_memory("after loading training set")
 
     logger.debug("📚 Loading test dataset...")
-    print_detailed_memory("before loading test set ")
+    print_detailed_memory("before loading test set")
     test_data = load_dataset_by_modality(modality, False)
-    print_detailed_memory("after loading test set ")
+    print_detailed_memory("after loading test set")
 
 
     logger.debug(f"Train dataset first example: {train_data[0]}")
@@ -625,7 +625,7 @@ if __name__ == "__main__":
     )
 
     logger.debug("🏃 Initializing CrossSteer text trainer...")
-    print_detailed_memory("before initializing trainer ")
+    print_detailed_memory("before initializing trainer")
 
 
     gc.collect()
@@ -667,7 +667,7 @@ if __name__ == "__main__":
     )
 
     logger.debug("✅ Trainer initialized successfully")
-    print_detailed_memory("after initializing trainer ")
+    print_detailed_memory("after initializing trainer")
 
 
     if script_args.resume_from_epoch is not None:
@@ -678,7 +678,7 @@ if __name__ == "__main__":
 
     logger.debug("🎯 Starting training...")
     print_trainable_parameters(model)
-    print_detailed_memory("before training starts ")
+    print_detailed_memory("before training starts")
 
 
     torch.cuda.empty_cache()
@@ -689,7 +689,7 @@ if __name__ == "__main__":
         logger.debug("🎉 Training complete!")
     except Exception as e:
         logger.error(f"❌ Training failed with error: {e}")
-        print_detailed_memory("when training errors ")
+        print_detailed_memory("when training errors")
         import traceback
         traceback.print_exc()
         raise e
