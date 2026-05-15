@@ -13,7 +13,6 @@ from tqdm import tqdm
 
 from .paths import DATA_DIR, OUTPUT_DIR, TRANSFORMERS_DIR
 
-
 def _ensure_torchvision_nms_schema():
     global _TORCHVISION_SCHEMA_LIB
     try:
@@ -22,9 +21,7 @@ def _ensure_torchvision_nms_schema():
     except Exception:
         pass
 
-
 _ensure_torchvision_nms_schema()
-
 
 use_third_party = False
 try:
@@ -33,7 +30,6 @@ except Exception:
     use_third_party = True
 if use_third_party and TRANSFORMERS_DIR not in sys.path:
     sys.path.insert(0, TRANSFORMERS_DIR)
-
 
 def get_input_embeds(model, input_ids, input_features, feature_attention_mask, attention_mask, labels):
     inputs_embeds = model.get_input_embeddings()(input_ids)
@@ -69,7 +65,6 @@ def get_input_embeds(model, input_ids, input_features, feature_attention_mask, a
         )
     return inputs_embeds
 
-
 def _move_to_device(inputs, device):
     return {k: v.to(device) if isinstance(v, torch.Tensor) else v for k, v in inputs.items()}
 
@@ -77,7 +72,6 @@ def _tokenize_prompt(processor, prompt: str, device: str):
     tokenizer = getattr(processor, "tokenizer", processor)
     enc = tokenizer(prompt, return_tensors="pt", padding=True)
     return {k: v.to(device) if isinstance(v, torch.Tensor) else v for k, v in enc.items()}
-
 
 def _compute_input_features_torch(audio_tensor: torch.Tensor, feature_extractor, device: str):
 
@@ -94,7 +88,6 @@ def _compute_input_features_torch(audio_tensor: torch.Tensor, feature_extractor,
         audio_tensor = torch.cat([audio_tensor, pad], dim=1)
     elif length > n_samples:
         audio_tensor = audio_tensor[:, :n_samples]
-
 
     attn = torch.zeros((audio_tensor.shape[0], n_samples), device=audio_tensor.device, dtype=torch.int32)
     valid = min(length, n_samples)
@@ -157,7 +150,6 @@ def _processor_call_with_audio(processor, *, text, audio, sampling_rate):
         sampling_rate=sampling_rate,
     )
 
-
 def _compute_logits(model, inputs):
 
     try:
@@ -185,13 +177,11 @@ def _compute_logits(model, inputs):
         outputs = model(model_inputs, inputs_embeds=inputs_embeds)
         return outputs.logits
 
-
 def _load_audio_from_url(audio_url: str, target_sr: int):
     if audio_url.startswith("file:"):
         path = audio_url.replace("file:", "")
         return librosa.load(path, sr=target_sr, mono=True)[0]
     return librosa.load(BytesIO(urlopen(audio_url).read()), sr=target_sr)[0]
-
 
 def _save_wav(path: str, audio: torch.Tensor, sample_rate: int = 16000) -> None:
     audio_np = audio.detach().cpu().float().numpy()
@@ -200,7 +190,6 @@ def _save_wav(path: str, audio: torch.Tensor, sample_rate: int = 16000) -> None:
     elif audio_np.ndim == 2:
         audio_np = audio_np.T
     sf.write(path, audio_np, sample_rate)
-
 
 def qwen_eval_gen(audio_list, processor, model, prompt=""):
     if len(audio_list) > 1:
@@ -262,7 +251,6 @@ def qwen_eval_gen(audio_list, processor, model, prompt=""):
     )[0]
     return response
 
-
 def _load_target_text(prompt: str) -> str:
     for name in ("advbench_train_300.csv", "advbench_infer_200.csv"):
         csv_path = os.path.join(DATA_DIR, name)
@@ -273,7 +261,6 @@ def _load_target_text(prompt: str) -> str:
             if row.get("question") == prompt:
                 return row.get("matching", "Sure, here are the step-by-step instructions")
     return "Sure, here are the step-by-step instructions"
-
 
 def qwen_jailbreak_gen(
     ori_prompt,
@@ -361,7 +348,6 @@ def qwen_jailbreak_gen(
     audios.append(adv_audio_suffix)
     audios = torch.cat(audios).unsqueeze_(0)
     audios.requires_grad_(True)
-
 
     text_inputs = _processor_call_with_audio(
         processor,
@@ -472,7 +458,6 @@ def qwen_jailbreak_gen(
 
     torch.cuda.empty_cache()
     return response, record
-
 
 def generate_universal_adversarial_audio(
     audio_paths,

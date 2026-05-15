@@ -7,7 +7,6 @@ from typing import Dict, List, Tuple
 
 import torch
 
-
 def _ensure_torchvision_nms_schema():
     global _TORCHVISION_SCHEMA_LIB
     try:
@@ -15,7 +14,6 @@ def _ensure_torchvision_nms_schema():
         _TORCHVISION_SCHEMA_LIB.define("nms(Tensor dets, Tensor scores, float iou_threshold) -> Tensor")
     except Exception:
         pass
-
 
 _ensure_torchvision_nms_schema()
 
@@ -35,12 +33,10 @@ from run_advwave_defense import (
     patch_qwen_omni_forward,
 )
 
-
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.abspath(os.path.join(BASE_DIR, "..", ".."))
 DEFAULT_MODEL = os.environ.get("QWEN25_OMNI_MODEL", "")
 DEFAULT_VECTOR_ROOT = os.path.join(REPO_ROOT, "vectors", "qwen25_omni")
-
 
 def _parse_layers(layers_arg: List[str], vector_root: str) -> List[int]:
     if len(layers_arg) == 1 and layers_arg[0].lower() == "all":
@@ -52,7 +48,6 @@ def _parse_layers(layers_arg: List[str], vector_root: str) -> List[int]:
             raise FileNotFoundError(f"No layer* directories found under {vector_root}")
         return sorted(layers)
     return [int(x) for x in layers_arg]
-
 
 def _resolve_vector_jobs(args) -> List[Tuple[int, str]]:
     jobs = []
@@ -71,18 +66,15 @@ def _resolve_vector_jobs(args) -> List[Tuple[int, str]]:
         raise FileNotFoundError("Missing Qwen2.5-Omni vectors:\n" + "\n".join(missing))
     return jobs
 
-
 def _save_json(path: str, obj: dict) -> None:
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(obj, f, indent=2, ensure_ascii=False)
 
-
 def _append_jsonl(path: str, row: dict) -> None:
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "a", encoding="utf-8") as f:
         f.write(json.dumps(row, ensure_ascii=False) + "\n")
-
 
 def _load_jsonl_by_key(path: str, key_name: str) -> Dict[int, dict]:
     rows: Dict[int, dict] = {}
@@ -100,7 +92,6 @@ def _load_jsonl_by_key(path: str, key_name: str) -> Dict[int, dict]:
             if key_name in row:
                 rows[int(row[key_name])] = row
     return rows
-
 
 def _parse_api_config(path: str) -> Dict[str, str]:
     if not path:
@@ -141,7 +132,6 @@ def _parse_api_config(path: str) -> Dict[str, str]:
         env["SILICONFLOW_MODEL"] = str(model)
     return env
 
-
 def _sync_judge_env() -> None:
     import advwave.judge as judge_module
 
@@ -152,7 +142,6 @@ def _sync_judge_env() -> None:
         "SILICONFLOW_BASE_URL", judge_module.SILICONFLOW_BASE_URL
     )
     judge_module.SILICONFLOW_MODEL = os.getenv("SILICONFLOW_MODEL", judge_module.SILICONFLOW_MODEL)
-
 
 def load_attack_rows_from_results(paths: List[str], run_dir: str) -> List[dict]:
     rows_by_id: Dict[int, dict] = {}
@@ -198,7 +187,6 @@ def load_attack_rows_from_results(paths: List[str], run_dir: str) -> List[dict]:
     _save_json(os.path.join(cache_dir, "attack_summary.json"), _summarize_attack(attack_rows))
     return attack_rows
 
-
 def _label_text(outcome: dict) -> str:
     if outcome["is_jailbreak"]:
         return "Jailbreak"
@@ -207,7 +195,6 @@ def _label_text(outcome: dict) -> str:
     if outcome["is_invalid"]:
         return "Invalid"
     return "Refusal"
-
 
 def _summarize_attack(rows: List[dict]) -> dict:
     total = len(rows)
@@ -223,7 +210,6 @@ def _summarize_attack(rows: List[dict]) -> dict:
         "attack_invalid_rate": (attack_invalid / total * 100) if total else 0,
         "attack_judge_error_rate": (attack_judge_error / total * 100) if total else 0,
     }
-
 
 def _summarize_defense(rows: List[dict], multipliers: List[float]) -> dict:
     stats = {}
@@ -250,7 +236,6 @@ def _summarize_defense(rows: List[dict], multipliers: List[float]) -> dict:
             "defense_success_rate": (counts["refusal"] / denom * 100) if denom else 0,
         }
     return stats
-
 
 def build_attack_cache(model, processor, dataset: List[dict], audio_paths: List[str], run_dir: str, args) -> List[dict]:
     cache_dir = os.path.join(run_dir, "attack_cache")
@@ -313,7 +298,6 @@ def build_attack_cache(model, processor, dataset: List[dict], audio_paths: List[
     attack_rows = [existing[k] for k in sorted(existing)]
     _save_json(os.path.join(cache_dir, "attack_summary.json"), _summarize_attack(attack_rows))
     return attack_rows
-
 
 def run_defense_sweep(model, processor, attack_rows: List[dict], vector_jobs: List[Tuple[int, str]], run_dir: str, args) -> None:
     defense_root = os.path.join(run_dir, "defense")
@@ -395,7 +379,6 @@ def run_defense_sweep(model, processor, attack_rows: List[dict], vector_jobs: Li
         }
         _save_json(os.path.join(layer_dir, "summary.json"), summary)
 
-
 def load_qwen_runtime(args):
     patch_qwen2_5_omni_load_speakers()
     from transformers import AutoProcessor, Qwen2_5OmniForConditionalGeneration
@@ -416,7 +399,6 @@ def load_qwen_runtime(args):
     ensure_qwen_speaker_map(model)
     patch_qwen_omni_forward(model)
     return model, processor
-
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Cached Qwen2.5-Omni AdvWave attack + all-layer defense sweep")
@@ -500,7 +482,6 @@ def main() -> None:
         attack_rows = build_attack_cache(model, processor, dataset, audio_paths, run_dir, args)
     run_defense_sweep(model, processor, attack_rows, vector_jobs, run_dir, args)
     print(f"Done. Results saved to {run_dir}")
-
 
 if __name__ == "__main__":
     main()

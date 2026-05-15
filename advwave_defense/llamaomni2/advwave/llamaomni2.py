@@ -16,7 +16,6 @@ except ImportError:
 
 from .paths import DATA_DIR, OUTPUT_DIR
 
-
 LLAMA_OMNI2_REPO = os.environ.get("LLAMA_OMNI2_REPO", "")
 if LLAMA_OMNI2_REPO and LLAMA_OMNI2_REPO not in sys.path and os.path.exists(LLAMA_OMNI2_REPO):
     sys.path.insert(0, LLAMA_OMNI2_REPO)
@@ -27,9 +26,7 @@ except Exception:
     DEFAULT_SPEECH_TOKEN = "<speech>"
     SPEECH_TOKEN_INDEX = -200
 
-
 SYSTEM_PROMPT = "You are a helpful, honest and concise assistant."
-
 
 class BlockWrapper(torch.nn.Module):
     def __init__(self, block, steering_vector=None, multiplier=0.0):
@@ -66,7 +63,6 @@ class BlockWrapper(torch.nn.Module):
         except AttributeError:
             return getattr(self.block, name)
 
-
 def ensure_llama_omni2_registered():
     try:
         from llama_omni2.model.language_model.omni2_speech2s_qwen2 import (
@@ -80,7 +76,6 @@ def ensure_llama_omni2_registered():
         print(f"Failed to import llama_omni2 registry hooks: {err}")
         return False
 
-
 def resolve_model_name_or_path(model_name):
     if os.path.exists(model_name):
         return model_name
@@ -89,7 +84,6 @@ def resolve_model_name_or_path(model_name):
     if os.path.exists(local_candidate):
         return local_candidate
     return model_name
-
 
 def load_llama_omni2_model(model_name, dtype, device):
     if not ensure_llama_omni2_registered():
@@ -136,7 +130,6 @@ def load_llama_omni2_model(model_name, dtype, device):
     model.requires_grad_(False)
     return model, resolved_model_name
 
-
 def load_llama_omni2_tokenizer(model_name):
     resolved_model_name = resolve_model_name_or_path(model_name)
     tokenizer = AutoTokenizer.from_pretrained(resolved_model_name, trust_remote_code=True, use_fast=False)
@@ -144,7 +137,6 @@ def load_llama_omni2_tokenizer(model_name):
         tokenizer.pad_token = tokenizer.eos_token
     tokenizer.padding_side = "left"
     return tokenizer
-
 
 def resolve_transformer_layers(model):
     candidates = [
@@ -161,7 +153,6 @@ def resolve_transformer_layers(model):
             continue
     raise AttributeError("Could not locate transformer layers on the LLaMA-Omni2 model.")
 
-
 def load_steering_vector(vector_path, device, dtype=torch.bfloat16):
     if not os.path.exists(vector_path):
         raise FileNotFoundError(f"Steering vector not found: {vector_path}")
@@ -171,7 +162,6 @@ def load_steering_vector(vector_path, device, dtype=torch.bfloat16):
         vector = torch.load(vector_path, map_location=device)
     return vector.to(dtype=dtype)
 
-
 def apply_steering_to_model(model, steering_vector, layer_idx, device):
     layers = resolve_transformer_layers(model)
     if layer_idx < 0 or layer_idx >= len(layers):
@@ -180,7 +170,6 @@ def apply_steering_to_model(model, steering_vector, layer_idx, device):
     wrapped_layer = wrapped_layer.to(device)
     layers[layer_idx] = wrapped_layer
     return wrapped_layer
-
 
 def _load_audio_from_path(audio_path, target_sr=16000):
     try:
@@ -198,12 +187,10 @@ def _load_audio_from_path(audio_path, target_sr=16000):
         waveform = torchaudio.functional.resample(waveform, sr, target_sr)
     return waveform.detach().cpu()
 
-
 def _load_audio_from_url(audio_url, target_sr=16000):
     if audio_url.startswith("file:"):
         return _load_audio_from_path(audio_url.replace("file:", ""), target_sr).numpy()
     return librosa.load(BytesIO(urlopen(audio_url).read()), sr=target_sr)[0]
-
 
 def save_audio(path, waveform, sample_rate=16000):
     import soundfile as sf
@@ -215,14 +202,12 @@ def save_audio(path, waveform, sample_rate=16000):
         waveform = waveform.numpy()
     sf.write(path, waveform, sample_rate)
 
-
 def waveform_to_speech_features(waveform, device):
     if not isinstance(waveform, torch.Tensor):
         waveform = torch.tensor(waveform)
     waveform = waveform.to(device=device, dtype=torch.float32)
     waveform = whisper.pad_or_trim(waveform)
     return whisper.log_mel_spectrogram(waveform, n_mels=128).permute(1, 0)
-
 
 def build_conversation(prompt="", include_audio=True):
     prompt = (prompt or "").strip()
@@ -237,7 +222,6 @@ def build_conversation(prompt="", include_audio=True):
         {"role": "user", "content": user_content},
     ]
 
-
 def prepare_prompt_ids(tokenizer, prompt, device):
     conversation = build_conversation(prompt=prompt, include_audio=True)
     input_ids = tokenizer.apply_chat_template(
@@ -249,7 +233,6 @@ def prepare_prompt_ids(tokenizer, prompt, device):
     if speech_token_id is not None and speech_token_id >= 0:
         input_ids[input_ids == speech_token_id] = SPEECH_TOKEN_INDEX
     return input_ids.unsqueeze(0).to(device)
-
 
 def llamaomni_eval_gen(audio_list, tokenizer, model, prompt="", device="cuda:0", max_new_tokens=200):
     if len(audio_list) > 1:
@@ -274,10 +257,8 @@ def llamaomni_eval_gen(audio_list, tokenizer, model, prompt="", device="cuda:0",
 
     return tokenizer.batch_decode(output_ids, skip_special_tokens=True)[0].strip()
 
-
 def inference_with_audio(model, tokenizer, audio_path, device, prompt="", max_new_tokens=200):
     return llamaomni_eval_gen([audio_path], tokenizer, model, prompt=prompt, device=device, max_new_tokens=max_new_tokens)
-
 
 def _load_target_text(prompt):
     import pandas as pd
@@ -292,7 +273,6 @@ def _load_target_text(prompt):
                 return row.get("matching", "Sure, here are the step-by-step instructions")
     return "Sure, here are the step-by-step instructions"
 
-
 def _build_attack_batch(tokenizer, prompt, target_text, device):
     prompt_ids = prepare_prompt_ids(tokenizer, prompt="", device=device)[0]
     target_ids = tokenizer(
@@ -304,7 +284,6 @@ def _build_attack_batch(tokenizer, prompt, target_text, device):
     labels = torch.full_like(input_ids, -100)
     labels[0, -target_ids.shape[0] :] = target_ids
     return input_ids, labels
-
 
 def llamaomni_jailbreak_gen(
     ori_prompt,
@@ -387,7 +366,6 @@ def llamaomni_jailbreak_gen(
     record = {"original_audio": audio_list, "jailbreaked_audio": audio_save_path, "losses": losses}
     torch.cuda.empty_cache()
     return response, record
-
 
 def generate_universal_adversarial_audio(
     audio_paths,

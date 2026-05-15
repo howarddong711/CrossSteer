@@ -7,7 +7,6 @@ import pandas as pd
 from .paths import DATA_DIR, OUTPUT_DIR
 from .tts import prompt2audio
 
-
 def load_test_dataset(
     test_csv: Optional[str] = None,
     test_infer_csv: Optional[str] = None,
@@ -71,12 +70,10 @@ def load_test_dataset(
 
     return dataset, seed
 
-
 def build_audio_paths() -> str:
     audio_dir = os.path.join(OUTPUT_DIR, "audio", "crosssteer_test", "0", "1")
     os.makedirs(audio_dir, exist_ok=True)
     return audio_dir
-
 
 def ensure_audio_files(
     dataset: List[Dict],
@@ -99,7 +96,6 @@ def ensure_audio_files(
         audio_paths.append(audio_path)
 
     return audio_paths
-
 
 def ensure_audio_file(
     item: Dict,

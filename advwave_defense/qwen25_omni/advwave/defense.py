@@ -6,7 +6,6 @@ import librosa
 import torch
 import torchaudio
 
-
 class BlockWrapper(torch.nn.Module):
     def __init__(self, block, steering_vector=None, multiplier=0.0):
         super().__init__()
@@ -42,7 +41,6 @@ class BlockWrapper(torch.nn.Module):
         except AttributeError:
             return getattr(self.block, name)
 
-
 def resolve_transformer_layers(model):
 
     candidates = [
@@ -60,7 +58,6 @@ def resolve_transformer_layers(model):
         except AttributeError:
             continue
     raise AttributeError("Could not locate transformer layers on the model.")
-
 
 def load_steering_vector(vector_path, device, dtype=torch.float16):
     if not os.path.exists(vector_path):
@@ -109,7 +106,6 @@ def _processor_call_with_audio(processor, *, text, audio, sampling_rate):
         sampling_rate=sampling_rate,
     )
 
-
 def apply_steering_to_model(model, steering_vector, layer_idx):
     _, layers = resolve_transformer_layers(model)
     if layer_idx < 0 or layer_idx >= len(layers):
@@ -120,11 +116,9 @@ def apply_steering_to_model(model, steering_vector, layer_idx):
     layers[layer_idx] = wrapped_layer
     return wrapped_layer
 
-
 def restore_steering_layer(model, layer_idx, original_layer):
     _, layers = resolve_transformer_layers(model)
     layers[layer_idx] = original_layer
-
 
 def inference_with_audio(model, processor, audio_path, device, prompt="", max_new_tokens=200):
     target_sr = getattr(getattr(processor, "feature_extractor", None), "sampling_rate", 16000)
