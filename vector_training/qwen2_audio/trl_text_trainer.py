@@ -494,17 +494,17 @@ class CrossSteerTextTrainer(Trainer):
         self._last_saved_vec = None
 
 
-        print("🔄 开始预处理数据集（避免 Trainer 内部处理）...")
-        train_dataset = self._preprocess_dataset(train_dataset, "训练集")
+        print("🔄 Start preprocessing dataset (avoid internal Trainer preprocessing)...")
+        train_dataset = self._preprocess_dataset(train_dataset, "train set")
         if eval_dataset is not None:
             if isinstance(eval_dataset, dict):
                 processed_eval = {}
                 for key, dataset in eval_dataset.items():
-                    processed_eval[key] = self._preprocess_dataset(dataset, f"验证集-{key}")
+                    processed_eval[key] = self._preprocess_dataset(dataset, f"validation set-{key}")
                 eval_dataset = processed_eval
             else:
-                eval_dataset = self._preprocess_dataset(eval_dataset, "验证集")
-        print("✅ 数据集预处理完成，现在初始化 Trainer...")
+                eval_dataset = self._preprocess_dataset(eval_dataset, "validation set")
+        print("✅ Dataset preprocessing complete, now initializing Trainer...")
 
 
 
@@ -526,9 +526,9 @@ class CrossSteerTextTrainer(Trainer):
         if hasattr(self, 'model') and isinstance(self.model, torch.nn.DataParallel):
             import logging
             logger = logging.getLogger(__name__)
-            logger.warning("🔧 检测到 DataParallel 包装，正在移除...")
+            logger.warning("🔧 Detected DataParallel wrapper, removing it...")
             self.model = self.model.module
-            logger.info(f"✅ 模型已解包，设备: {next(self.model.parameters()).device}")
+            logger.info(f"✅ Model unwrapped, device: {next(self.model.parameters()).device}")
 
 
         if hasattr(self.model, "add_model_tags"):
@@ -583,7 +583,7 @@ class CrossSteerTextTrainer(Trainer):
         if self.loss_type == "bco_pair":
             self.running = RunningMoments(self.accelerator)
 
-    def _preprocess_dataset(self, dataset: Dataset, name: str = "数据集") -> Dataset:
+    def _preprocess_dataset(self, dataset: Dataset, name: str = "dataset") -> Dataset:
 
 
 
@@ -605,8 +605,8 @@ class CrossSteerTextTrainer(Trainer):
             batch_size = min(250, dataset_size)
             writer_batch_size = 10
 
-        print(f"   📊 {name}: {dataset_size} 个样本")
-        print(f"   🔧 批处理策略: 每批 {batch_size} 样本")
+        print(f"   📊 {name}: {dataset_size} samples")
+        print(f"   🔧 Batch strategy: each batch has {batch_size} samples")
 
         processed_parts = []
         total_batches = (dataset_size + batch_size - 1) // batch_size
@@ -620,7 +620,7 @@ class CrossSteerTextTrainer(Trainer):
         original_level = datasets_logger.level
         datasets_logger.setLevel(logging.ERROR)
 
-        with tqdm(total=dataset_size, desc=f"   处理{name}", unit="样本", ncols=100,
+        with tqdm(total=dataset_size, desc=f"   Processing {name}", unit="sample", ncols=100,
                   bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]') as pbar:
             for start_idx in range(0, dataset_size, batch_size):
                 end_idx = min(start_idx + batch_size, dataset_size)
@@ -656,7 +656,7 @@ class CrossSteerTextTrainer(Trainer):
         datasets_logger.setLevel(original_level)
 
 
-        print(f"   🔗 合并批次...")
+        print(f"   🔗 Merging batches...")
         result_dataset = concatenate_datasets(processed_parts)
 
 
@@ -675,34 +675,34 @@ class CrossSteerTextTrainer(Trainer):
         filtered_len = len(result_dataset)
 
         if filtered_len < original_len:
-            print(f"   ⚠️  过滤掉 {original_len - filtered_len} 个无效样本，剩余 {filtered_len}")
+            print(f"   ⚠️  Filtered out {original_len - filtered_len} invalid samples, remaining {filtered_len}")
         else:
-            print(f"   ✅ {name}处理完成: {filtered_len} 个样本")
+            print(f"   ✅ {name} processing complete: {filtered_len} samples")
 
 
         if filtered_len > 0:
             sample = result_dataset[0]
             vocab_size = self.tokenizer.vocab_size
-            print(f"   🔍 样本检查: prompt长度={len(sample.get('prompt_input_ids', []))}, "
-                  f"chosen长度={len(sample.get('chosen_input_ids', []))}, "
-                  f"rejected长度={len(sample.get('rejected_input_ids', []))}")
-            print(f"   📖 Tokenizer词表大小: {vocab_size}")
+            print(f"   🔍 sample check: prompt length={len(sample.get('prompt_input_ids', []))}, "
+                  f"chosen length={len(sample.get('chosen_input_ids', []))}, "
+                  f"rejected length={len(sample.get('rejected_input_ids', []))}")
+            print(f"   📖 Tokenizer vocab size: {vocab_size}")
 
 
             for key in ["prompt_input_ids", "chosen_input_ids", "rejected_input_ids"]:
                 if key in sample:
                     ids = sample[key]
                     if len(ids) == 0:
-                        print(f"   ⚠️  {key} 为空列表!")
+                        print(f"   ⚠️  {key} is an empty list!")
                         continue
                     min_id = min(ids)
                     max_id = max(ids)
                     print(f"   🔢 {key}: min={min_id}, max={max_id}")
 
                     if max_id >= vocab_size:
-                        print(f"   ℹ️  {key} 包含特殊token (ID={max_id})，这在音频模型中是正常的")
+                        print(f"   ℹ️  {key} contains a special token (ID={max_id}), this is normal for audio models")
                     if min_id < 0:
-                        print(f"   ❌ {key} 包含负数token ID={min_id}!")
+                        print(f"   ❌ {key} contains a negative token ID={min_id}!")
 
         gc.collect()
         return result_dataset
@@ -716,10 +716,10 @@ class CrossSteerTextTrainer(Trainer):
 
 
         if torch.cuda.device_count() > 1 and not isinstance(model, torch.nn.DataParallel):
-            logger.warning(f"🚫 检测到 {torch.cuda.device_count()} 个 GPU，但强制禁用 DataParallel")
-            logger.warning(f"   主模型在: {next(model.parameters()).device}")
+            logger.warning(f"🚫 Detected {torch.cuda.device_count()} GPU(s), but DataParallel is forcibly disabled")
+            logger.warning(f"   Main model on: {next(model.parameters()).device}")
             if hasattr(self, 'ref_model') and self.ref_model is not None:
-                logger.warning(f"   参考模型在: {next(self.ref_model.parameters()).device}")
+                logger.warning(f"   Reference model on: {next(self.ref_model.parameters()).device}")
 
         return model
 
@@ -797,19 +797,19 @@ class CrossSteerTextTrainer(Trainer):
                     ids = result_dict[key]
                     max_id = max(ids) if ids else 0
                     if max_id >= vocab_size:
-                        print(f"⚠️  警告: {key} 包含超出词表的 token ID {max_id} (vocab_size={vocab_size})")
+                        print(f"⚠️  Warning: {key} contains a token ID beyond vocab {max_id} (vocab_size={vocab_size})")
                         result_dict[key] = [min(i, vocab_size - 1) for i in ids]
 
             return result_dict
 
         except Exception as e:
             prompt_preview = feature.get("prompt", "")[:50]
-            print(f"❌ 处理文本样本时出错 (prompt: {prompt_preview}...): {str(e)[:100]}")
+            print(f"❌ Error while processing text sample (prompt: {prompt_preview}...): {str(e)[:100]}")
             return None
 
     def _tokenize_audio_row(self, feature: Dict) -> Optional[Dict]:
         if self.processor is None:
-            print("❌ Audio processor not available,无法处理音频样本")
+            print("❌ Audio processor not available, cannot process audio sample")
             return None
 
         max_length = self.max_length
@@ -827,7 +827,7 @@ class CrossSteerTextTrainer(Trainer):
             return None
 
         if not os.path.exists(audio_path):
-            print(f"❌ 音频文件不存在: {audio_path}")
+            print(f"❌ Audio file does not exist: {audio_path}")
             return None
 
         try:
@@ -851,7 +851,7 @@ class CrossSteerTextTrainer(Trainer):
                     sampling_rate = expected_sr
                 except Exception as e:
                     print(
-                        f"❌ 音频重采样失败 (路径: {audio_path}): {str(e)[:120]} "
+                        f"❌ Audio resampling failed (path: {audio_path}): {str(e)[:120]} "
                         f"(sr={sampling_rate} -> {expected_sr})"
                     )
                     return None
@@ -964,7 +964,7 @@ class CrossSteerTextTrainer(Trainer):
 
             return result_dict
         except Exception as e:
-            print(f"❌ 音频tokenization失败 (路径: {audio_path}): {str(e)[:100]}")
+            print(f"❌ Audio tokenization failed (path: {audio_path}): {str(e)[:100]}")
             return None
 
     def _pad_tokens_to_max_length(self, tokens: torch.Tensor, max_length: Optional[int] = None) -> torch.Tensor:
