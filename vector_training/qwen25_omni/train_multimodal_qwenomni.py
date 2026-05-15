@@ -664,8 +664,6 @@ if __name__ == "__main__":
         model = model.to("cuda:0")
     print_detailed_memory("after wrapping BlockWrapper")
 
-    logger.debug("✅ Optimization: skip loading a separate reference model and use the main model with multiplier=0 instead")
-    logger.debug("   This will save about 50% of GPU memory usage!")
     model_ref = None
 
     logger.debug("🔒 Freezing non-target parameters in the main model...")
