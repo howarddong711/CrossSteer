@@ -295,7 +295,7 @@ def get_text_dataset(behavior='power-seeking', train=True):
 
     dataset_type = "train" if train else "test"
     logger.debug(f"📊 Loading text data: behavior={behavior}, type={dataset_type}")
-    print_detailed_memory(f"{dataset_type}数据加载前 ")
+    print_detailed_memory(f"{dataset_type} dataset loading (before)")
 
     data_file = resolve_advbench_split(train)
 
@@ -325,7 +325,7 @@ def get_text_dataset(behavior='power-seeking', train=True):
         exit(1)
 
     logger.debug(f"✅ {dataset_type.capitalize()} dataset loaded (text), samples: {len(dataset)}")
-    print_detailed_memory(f"{dataset_type}文本读取完毕 ")
+    print_detailed_memory(f"{dataset_type} text loading complete")
     return dataset
 
 
@@ -465,7 +465,7 @@ class ScriptArguments:
 
     resume_from_epoch: Optional[int] = field(
         default=None,
-        metadata={"help": "从指定epoch的vector恢复训练。例如：40表示加载vec_ep40_layer10.pt并从epoch 41开始"}
+        metadata={"help": "Resume training from a specified vector epoch. For example, 40 loads vec_ep40_layer10.pt and starts from epoch 41."}
     )
 
 
@@ -475,7 +475,7 @@ if __name__ == "__main__":
 
     torch.cuda.empty_cache()
     gc.collect()
-    print_detailed_memory("程序启动后 ")
+    print_detailed_memory("after program startup")
 
     parser = HfArgumentParser(ScriptArguments)
     script_args = parser.parse_args_into_dataclasses()[0]
@@ -519,7 +519,7 @@ if __name__ == "__main__":
         logger.warning("Current GPU does not support bf16/fp16; training will run in full precision.")
 
     logger.debug("🤖 Loading processors/tokenizers based on modality...")
-    print_detailed_memory("加载Tokenizer/Processor前 ")
+    print_detailed_memory("before loading tokenizer/processor")
 
     processor = None
     if modality == "text":
@@ -559,7 +559,7 @@ if __name__ == "__main__":
     gc.collect()
     torch.cuda.empty_cache()
 
-    print_detailed_memory("加载主模型前 ")
+    print_detailed_memory("before loading main model")
 
     logger.debug("Loading main model to GPU 0...")
     model = Qwen2_5OmniForConditionalGeneration.from_pretrained(
@@ -574,7 +574,7 @@ if __name__ == "__main__":
 
     model.config.use_cache = False
 
-    print_detailed_memory("加载主模型后 ")
+    print_detailed_memory("after loading main model")
     layers_path, layers = resolve_transformer_layers(model)
     ensure_language_model_layers(model, layers)
     hidden_size = resolve_hidden_size(model, layers)
@@ -662,10 +662,10 @@ if __name__ == "__main__":
     model.config.use_cache = False
     if load_kwargs.get("device_map") is None:
         model = model.to("cuda:0")
-    print_detailed_memory("包装BlockWrapper后 ")
+    print_detailed_memory("after wrapping BlockWrapper")
 
-    logger.debug("✅ 优化：不加载独立的参考模型，使用 multiplier=0 的主模型代替")
-    logger.debug("   这将节省约 50% 的显存占用！")
+    logger.debug("✅ Optimization: skip loading a separate reference model and use the main model with multiplier=0 instead")
+    logger.debug("   This will save about 50% of GPU memory usage!")
     model_ref = None
 
     logger.debug("🔒 Freezing non-target parameters in the main model...")
@@ -682,7 +682,7 @@ if __name__ == "__main__":
             frozen_count += 1
     logger.debug(f"   Frozen: {frozen_count} params, Trainable: {trainable_count} params")
     logger.debug('✅ Model loading and preparation complete.')
-    print_detailed_memory("模型准备完成 ")
+    print_detailed_memory("model setup complete")
 
 
     def load_dataset_by_modality(target_modality, train_flag=True):
@@ -693,14 +693,14 @@ if __name__ == "__main__":
         return build_multimodal_dataset(text_behavior, audio_behavior, train_flag)
 
     logger.debug("📚 Loading training dataset...")
-    print_detailed_memory("加载训练集前 ")
+    print_detailed_memory("before loading training set")
     train_data = load_dataset_by_modality(modality, True)
-    print_detailed_memory("加载训练集后 ")
+    print_detailed_memory("after loading training set")
 
     logger.debug("📚 Loading test dataset...")
-    print_detailed_memory("加载测试集前 ")
+    print_detailed_memory("before loading test set")
     test_data = load_dataset_by_modality(modality, False)
-    print_detailed_memory("加载测试集后 ")
+    print_detailed_memory("after loading test set")
 
 
     logger.debug(f"Train dataset first example: {train_data[0]}")
@@ -740,7 +740,7 @@ if __name__ == "__main__":
     )
 
     logger.debug("🏃 Initializing CrossSteer text trainer...")
-    print_detailed_memory("初始化trainer前 ")
+    print_detailed_memory("before initializing trainer")
 
 
     gc.collect()
@@ -754,13 +754,13 @@ if __name__ == "__main__":
 
     try:
         soft, hard = resource.getrlimit(resource.RLIMIT_AS)
-        logger.debug(f"📊 当前内存限制: soft={soft/(1024**3):.1f}GB, hard={hard/(1024**3):.1f}GB")
+        logger.debug(f"📊 current memory limits: soft={soft/(1024**3):.1f}GB, hard={hard/(1024**3):.1f}GB")
 
         if soft == resource.RLIM_INFINITY:
             resource.setrlimit(resource.RLIMIT_AS, (100 * 1024**3, hard))
-            logger.debug("✅ 设置内存软限制为 100GB")
+            logger.debug("✅ set memory soft limit to 100GB")
     except Exception as e:
-        logger.warning(f"⚠️  无法设置内存限制: {e}")
+        logger.warning(f"⚠️  failed to set memory limit: {e}")
 
 
 
@@ -781,7 +781,7 @@ if __name__ == "__main__":
     )
 
     logger.debug("✅ Trainer initialized successfully")
-    print_detailed_memory("初始化trainer后 ")
+    print_detailed_memory("after initializing trainer")
 
 
     if script_args.resume_from_epoch is not None:
@@ -792,7 +792,7 @@ if __name__ == "__main__":
 
     logger.debug("🎯 Starting training...")
     print_trainable_parameters(model)
-    print_detailed_memory("训练开始前 ")
+    print_detailed_memory("before training starts")
 
 
     torch.cuda.empty_cache()
@@ -803,7 +803,7 @@ if __name__ == "__main__":
         logger.debug("🎉 Training complete!")
     except Exception as e:
         logger.error(f"❌ Training failed with error: {e}")
-        print_detailed_memory("训练报错时 ")
+        print_detailed_memory("when training errors")
         import traceback
         traceback.print_exc()
         raise e
