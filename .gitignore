@@ -16,6 +16,7 @@ wandb/
 attack_cache/
 *.wav
 !assets/reference.wav
+!data/advbench_audio/*.wav
 models/
 hf-models/
 third_party/transformers/
