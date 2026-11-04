@@ -1,14 +1,32 @@
+<div align="center">
+
 # CrossSteer: Cross-Modal Safety Steering for Audio-Language Models
 
-**Houde Dong, Weifei Jin, Yuxin Cao, Wei Song, Derui Wang, and Jie Hao**
+**Houde Dong<sup>1</sup>, Weifei Jin<sup>1</sup>, Yuxin Cao<sup>2</sup>, Wei Song<sup>3</sup>, Derui Wang<sup>4</sup>, Jie Hao<sup>1,*</sup>**
 
-NeurIPS 2026
+<sup>1</sup>Beijing University of Posts and Telecommunications &nbsp; <sup>2</sup>National University of Singapore<br>
+<sup>3</sup>Griffith University &nbsp; <sup>4</sup>CSIRO's Data61
+
+<sup>*</sup>Corresponding author
+
+**Accepted at NeurIPS 2026**
+
+</div>
+
+## Overview
 
 CrossSteer is a representation-level defense against jailbreaks in audio-language models (ALMs). It learns a safety steering vector from text-only preference triples and transfers the intervention to spoken inputs through the model's shared language backbone. The model weights remain frozen: at inference, a scaled vector is added to the residual stream at a selected layer to encourage safe refusal.
 
 ![CrossSteer pipeline: text preference optimization and cross-modal inference](assets/crosssteer_pipeline.png)
 
-In the paper, audio-derived activations are more diffuse than text-derived activations, while semantically matched text and audio become aligned in middle backbone layers. Learning the steering direction from text exploits this alignment without requiring audio preference training. Across three evaluated backbones, the paper reports average audio attack success rate (ASR) falling from **84.3% to 6.8%**, and text ASR from **60.5% to 29.9%**. These are paper results under the reported experimental settings, not a guarantee against adaptive attacks.
+CrossSteer has two stages:
+
+1. **Learn from text.** With the audio-language model frozen, optimize one steering vector using harmful prompts paired with unsafe and refusal responses.
+2. **Steer text or audio.** Add the vector at a selected layer of the shared language backbone during inference to encourage safe refusal.
+
+## Key Findings
+
+The paper finds that audio-derived activations are more diffuse than text-derived activations, while semantically matched text and audio become aligned in middle backbone layers. Learning the steering direction from text exploits this alignment without requiring audio preference training. Across three evaluated backbones, the paper reports average audio attack success rate (ASR) falling from **84.3% to 6.8%**, and text ASR from **60.5% to 29.9%** under the reported experimental settings.
 
 ![Comparison of text-trained and audio-trained steering vectors](assets/modality_comparison.png)
 
@@ -22,7 +40,9 @@ The experiments cover Qwen2-Audio, Qwen2.5-Omni, and LLaMA-Omni2, plus a LLaMA-O
 - `data/`: 320/200 JSONL text preference splits.
 - `scripts/check_vectors.py`: inspect the released vectors.
 
-## Setup
+## Quick Start
+
+### Installation
 
 Install the dependencies in a suitable Python environment with PyTorch and GPU support:
 
@@ -38,13 +58,15 @@ export SILICONFLOW_API_KEY="<your-key>"
 
 Never commit API keys. External experiment logging is disabled by default; pass `--report_to swanlab` to a training script to enable SwanLab.
 
+### Check the Released Vectors
+
 To inspect the supplied vectors:
 
 ```bash
 python scripts/check_vectors.py
 ```
 
-## Dataset
+### Dataset
 
 The released AdvBench data contains harmful prompts and unsafe example responses for safety research. Handle it accordingly.
 
@@ -55,7 +77,7 @@ The released AdvBench data contains harmful prompts and unsafe example responses
 
 Each record contains `prompt`, `jailbreak_response`, and `refusal_response`. The training and evaluation prompts are disjoint. Audio inputs are generated from evaluation prompts using text-to-speech and cached locally; generated audio is not included in this repository.
 
-## Steering Vectors
+### Steering Vectors
 
 | Model | Layer | Epoch | Path |
 | --- | ---: | ---: | --- |
@@ -63,7 +85,7 @@ Each record contains `prompt`, `jailbreak_response`, and `refusal_response`. The
 | Qwen2.5-Omni-7B | 13 | 400 | `vectors/qwen25_omni/layer13/vec_ep400_layer13.pt` |
 | LLaMA-Omni2-7B | 12 | 300 | `vectors/llamaomni2/layer12/vec_ep300_layer12.pt` |
 
-## Training
+### Train a Steering Vector
 
 Run from the repository root. Replace `<MODEL_PATH>` with the corresponding local model path:
 
@@ -80,7 +102,7 @@ python train_multimodal_llamaomni2.py --model_name_or_path <MODEL_PATH> --input_
 
 These commands use the 320-example training split. Consult each script's arguments and model-specific dependencies before running.
 
-## Defense Runners
+### Run an Audio Defense
 
 Run from the repository root, with model weights and any required attack inputs prepared:
 
@@ -97,13 +119,19 @@ python run_advwave_defense_llamaomni2.py --model_name <MODEL_PATH> --layers 12 -
 
 On the first run, `--generate_tts` generates missing audio using the configured TTS API. Subsequent runs can reuse the prompt-keyed audio cache without this flag. Generated audio, attack caches, logs, and experiment outputs are excluded from the repository.
 
+## Contact
+
+For questions, contact the corresponding author, Jie Hao: haojie@bupt.edu.cn.
+
 ## Citation
 
+The paper has been accepted at NeurIPS 2026. The entry below records that status; a public paper link and the final proceedings citation can be added when available.
+
 ```bibtex
-@inproceedings{dong2026crosssteer,
+@unpublished{dong2026crosssteer,
   title     = {CrossSteer: Cross-Modal Safety Steering for Audio-Language Models},
   author    = {Dong, Houde and Jin, Weifei and Cao, Yuxin and Song, Wei and Wang, Derui and Hao, Jie},
-  booktitle = {The Fortieth Annual Conference on Neural Information Processing Systems},
-  year      = {2026}
+  year      = {2026},
+  note      = {Accepted at NeurIPS 2026}
 }
 ```
