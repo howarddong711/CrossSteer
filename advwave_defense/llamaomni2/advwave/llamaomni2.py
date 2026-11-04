@@ -263,14 +263,14 @@ def inference_with_audio(model, tokenizer, audio_path, device, prompt="", max_ne
 def _load_target_text(prompt):
     import pandas as pd
 
-    for name in ("advbench_train_300.csv", "advbench_infer_200.csv"):
+    for name in ("advbench_train_320.jsonl", "advbench_infer_200.jsonl"):
         csv_path = os.path.join(DATA_DIR, name)
         if not os.path.exists(csv_path):
             continue
-        data = pd.read_csv(csv_path)
+        data = pd.read_json(csv_path, lines=True)
         for _, row in data.iterrows():
-            if row.get("question") == prompt:
-                return row.get("matching", "Sure, here are the step-by-step instructions")
+            if row.get("prompt") == prompt:
+                return row.get("jailbreak_response", "Sure, here are the step-by-step instructions")
     return "Sure, here are the step-by-step instructions"
 
 def _build_attack_batch(tokenizer, prompt, target_text, device):

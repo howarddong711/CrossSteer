@@ -87,14 +87,14 @@ def _load_dataset_csv(path: str, dedup_prompts: bool = False) -> List[dict]:
     dataset = []
     source = os.path.splitext(os.path.basename(path))[0]
     with open(path, "r", encoding="utf-8-sig", newline="") as f:
-        reader = csv.DictReader(f)
+        reader = (json.loads(line) for line in f if line.strip()) if path.endswith('.jsonl') else csv.DictReader(f)
         for idx, row in enumerate(reader):
             dataset.append(
                 {
                     "id": idx,
-                    "question": row.get("question", ""),
-                    "matching": row.get("matching", ""),
-                    "not_matching": row.get("not_matching", ""),
+                    "question": row.get("question", row.get("prompt", "")),
+                    "matching": row.get("matching", row.get("jailbreak_response", "")),
+                    "not_matching": row.get("not_matching", row.get("refusal_response", "")),
                     "source": source,
                     "source_index": idx,
                 }

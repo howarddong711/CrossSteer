@@ -19,7 +19,7 @@ The experiments cover Qwen2-Audio, Qwen2.5-Omni, and LLaMA-Omni2, plus a LLaMA-O
 - `vector_training/`: text preference-based vector training for the three backbones.
 - `advwave_defense/`: AdvWave attack and CrossSteer defense runners.
 - `vectors/`: released steering vectors.
-- `data/`: original 300/200 CSV splits and the 520-example text and audio dataset.
+- `data/`: 320/200 JSONL splits and the 520-example text and audio dataset.
 - `scripts/check_vectors.py`: inspect the released vectors.
 
 ## Setup
@@ -53,10 +53,10 @@ The released AdvBench data contains harmful prompts and unsafe example responses
 | `data/AdvBench_Text.jsonl` | 520 text preference records: `prompt`, `jailbreak_response`, `refusal_response` |
 | `data/AdvBench_Audio.jsonl` | 520 corresponding records with an additional `audio` filename |
 | `data/advbench_audio/` | 520 WAV files referenced by the audio JSONL |
-| `data/advbench_train_300.csv` | Original 300-example training split used by the existing training scripts |
-| `data/advbench_infer_200.csv` | Original 200-example inference split used by the existing runners |
+| `data/advbench_train_320.jsonl` | 320 text preference records for training |
+| `data/advbench_infer_200.jsonl` | 200 text preference records for evaluation |
 
-Audio paths are relative to `data/advbench_audio/`. For example, a record with `"audio": "0.wav"` refers to `data/advbench_audio/0.wav`. The two JSONL files contain the full 520-example collection; they are **not** a train/test split. The current scripts still read the original CSV splits by default. To use the JSONL files in training or evaluation, adapt the data loader and establish a non-overlapping split before measuring performance. The full dataset should not be treated as a held-out test set for models trained on its prompts.
+Audio paths are relative to `data/advbench_audio/`. For example, a record with `"audio": "0.wav"` refers to `data/advbench_audio/0.wav`. The training and evaluation files are disjoint subsets of `AdvBench_Text.jsonl`. The corresponding audio records can be found in `AdvBench_Audio.jsonl` by matching the prompt.
 
 ## Steering Vectors
 
@@ -81,7 +81,7 @@ cd ../llamaomni2
 python train_multimodal_llamaomni2.py --model_name_or_path <MODEL_PATH> --input_modality text --behavior jailbreak --layer 12 --num_train_epochs 300
 ```
 
-These commands use the repository's original training split. Consult each script's arguments and model-specific dependencies before running.
+These commands use the 320-example training split. Consult each script's arguments and model-specific dependencies before running.
 
 ## Defense Runners
 

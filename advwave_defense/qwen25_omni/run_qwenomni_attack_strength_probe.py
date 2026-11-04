@@ -88,7 +88,7 @@ def resolve_audio_paths(dataset_by_id: Dict[int, Dict], ids: List[int], audio_di
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_name", default=DEFAULT_MODEL)
-    parser.add_argument("--dataset_csv", default=os.path.join(DATA_DIR, "advbench_infer_200.csv"))
+    parser.add_argument("--dataset_csv", default=os.path.join(DATA_DIR, "advbench_infer_200.jsonl"))
     parser.add_argument("--audio_dir", default="")
     parser.add_argument("--ids", nargs="+", type=int, default=None)
     parser.add_argument("--id_start", type=int, default=None)

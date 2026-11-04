@@ -56,7 +56,7 @@ REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file_
 CROSSSTEER_DATA_DIR = os.path.join(REPO_ROOT, "data")
 
 def resolve_advbench_split(train=True):
-    filename = "advbench_train_300.csv" if train else "advbench_infer_200.csv"
+    filename = "advbench_train_320.jsonl" if train else "advbench_infer_200.jsonl"
     return os.path.join(CROSSSTEER_DATA_DIR, filename)
 
 def ensure_llama_omni2_registered():
@@ -250,12 +250,11 @@ def get_text_dataset(behavior='power-seeking', train=True):
     data_file = resolve_advbench_split(train)
 
     try:
-        df = pd.read_csv(data_file)
+        df = pd.read_json(data_file, lines=True)
         df = df.fillna('')
         df = df.rename(columns={
-            'question': 'prompt',
-            'matching': 'matching',
-            'not_matching': 'not_matching'
+            'jailbreak_response': 'matching',
+            'refusal_response': 'not_matching'
         })
         if 'prompt' not in df.columns:
             df['prompt'] = ''
@@ -269,7 +268,7 @@ def get_text_dataset(behavior='power-seeking', train=True):
         logger.error(f"Error: {e}")
         exit(1)
     except Exception as e:
-        logger.error(f"FATAL: Failed to load CSV at {data_file}. Error: {e}")
+        logger.error(f"FATAL: Failed to load JSONL at {data_file}. Error: {e}")
         import traceback
         traceback.print_exc()
         exit(1)

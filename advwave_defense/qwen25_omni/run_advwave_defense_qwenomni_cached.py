@@ -419,7 +419,7 @@ def main() -> None:
     parser.add_argument("--output_dir", type=str, default=os.path.join(OUTPUT_DIR, "qwenomni_cached"))
     parser.add_argument("--run_name", type=str, default=None)
     parser.add_argument("--device", type=str, default="cuda:0")
-    parser.add_argument("--test_csv", type=str, default=os.path.join(DATA_DIR, "advbench_infer_200.csv"))
+    parser.add_argument("--test_csv", type=str, default=os.path.join(DATA_DIR, "advbench_infer_200.jsonl"))
     parser.add_argument("--test_infer_csv", type=str, default="")
     parser.add_argument("--attack_results_jsonl", nargs="*", default=None)
     parser.add_argument("--api_file", type=str, default=os.environ.get("CROSSSTEER_API_FILE", "API.md"))

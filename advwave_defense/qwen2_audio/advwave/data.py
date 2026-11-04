@@ -12,14 +12,15 @@ def load_test_dataset(
     test_infer_csv: Optional[str] = None,
     seed: Optional[int] = None,
 ) -> Tuple[List[Dict], int]:
-    test_csv = test_csv or os.path.join(DATA_DIR, "advbench_infer_200.csv")
+    test_csv = test_csv or os.path.join(DATA_DIR, "advbench_infer_200.jsonl")
     test_infer_csv = test_infer_csv or None
 
     dfs = []
     for path, source in ((test_csv, "test"), (test_infer_csv, "test_infer")):
         if path is None:
             continue
-        df = pd.read_csv(path)
+        df = pd.read_json(path, lines=True) if path.endswith('.jsonl') else pd.read_csv(path)
+        df = df.rename(columns={'prompt': 'question', 'jailbreak_response': 'matching', 'refusal_response': 'not_matching'})
         df = df.copy()
         df["source"] = source
         df["source_index"] = list(range(len(df)))

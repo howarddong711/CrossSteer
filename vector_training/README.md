@@ -21,6 +21,6 @@ cd ../llamaomni2
 python train_multimodal_llamaomni2.py --model_name_or_path <MODEL_PATH> --input_modality text --behavior jailbreak --layer 12 --num_train_epochs 300
 ```
 
-The shared AdvBench split is stored at `../data/advbench_train_300.csv` and `../data/advbench_infer_200.csv`.
+The shared AdvBench split is stored at `../data/advbench_train_320.jsonl` and `../data/advbench_infer_200.jsonl`.
 
 External experiment logging is disabled by default. Pass `--report_to swanlab` only when SwanLab logging is needed.
