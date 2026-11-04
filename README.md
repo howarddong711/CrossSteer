@@ -118,20 +118,3 @@ python run_advwave_defense_llamaomni2.py --model_name <MODEL_PATH> --layers 12 -
 ```
 
 On the first run, `--generate_tts` generates missing audio using the configured TTS API. Subsequent runs can reuse the prompt-keyed audio cache without this flag. Generated audio, attack caches, logs, and experiment outputs are excluded from the repository.
-
-## Contact
-
-For questions, contact the corresponding author, Jie Hao: haojie@bupt.edu.cn.
-
-## Citation
-
-The paper has been accepted at NeurIPS 2026. The entry below records that status; a public paper link and the final proceedings citation can be added when available.
-
-```bibtex
-@unpublished{dong2026crosssteer,
-  title     = {CrossSteer: Cross-Modal Safety Steering for Audio-Language Models},
-  author    = {Dong, Houde and Jin, Weifei and Cao, Yuxin and Song, Wei and Wang, Derui and Hao, Jie},
-  year      = {2026},
-  note      = {Accepted at NeurIPS 2026}
-}
-```
