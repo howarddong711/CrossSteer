@@ -1,6 +1,5 @@
 import os
 import random
-import json
 import hashlib
 from typing import List, Tuple, Dict, Optional
 
@@ -58,15 +57,12 @@ def load_test_dataset(
         if seed is None:
             seed = 0
 
-    with open(os.path.join(DATA_DIR, "AdvBench_Audio.jsonl"), encoding="utf-8") as f:
-        audio_map = {row["prompt"]: row["audio"] for row in map(json.loads, f)}
     dataset = []
     for idx, row in enumerate(records):
         dataset.append(
             {
                 "id": idx,
                 "question": row.get("question", ""),
-                "dataset_audio": audio_map.get(row.get("question", "")),
                 "matching": row.get("matching", ""),
                 "not_matching": row.get("not_matching", ""),
                 "source": row.get("source", ""),
@@ -95,11 +91,6 @@ def ensure_audio_file(
     tts_max_retries: int = 5,
     tts_sleep: float = 0.5,
 ) -> str:
-    if not generate_tts and item.get("dataset_audio"):
-        audio_path = os.path.join(DATA_DIR, "advbench_audio", item["dataset_audio"])
-        if not os.path.isfile(audio_path):
-            raise FileNotFoundError(audio_path)
-        return audio_path
     audio_dir = build_audio_paths()
     key = hashlib.sha256(item["question"].encode("utf-8")).hexdigest()
     audio_path = os.path.join(audio_dir, f"{key}.wav")
@@ -109,6 +100,7 @@ def ensure_audio_file(
             audio_path,
             max_retries=tts_max_retries,
             throttle_seconds=tts_sleep,
+            allow_fallback=False,
         )
     if not os.path.isfile(audio_path):
         raise FileNotFoundError(f"Audio not found for prompt; enable --generate_tts: {audio_path}")

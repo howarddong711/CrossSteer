@@ -25,7 +25,11 @@ def load_module(model, output_dir):
     paths.OUTPUT_DIR = output_dir
     sys.modules['advwave.paths'] = paths
     tts = types.ModuleType('advwave.tts')
-    tts.prompt2audio = lambda prompt, path, **kwargs: Path(path).write_text(prompt, encoding='utf-8')
+    def prompt2audio(prompt, path, **kwargs):
+        if kwargs.get('allow_fallback') is not False:
+            raise AssertionError('TTS failures must not produce fallback silence')
+        Path(path).write_text(prompt, encoding='utf-8')
+    tts.prompt2audio = prompt2audio
     sys.modules['advwave.tts'] = tts
     spec = importlib.util.spec_from_file_location('advwave.data', directory / 'data.py')
     module = importlib.util.module_from_spec(spec)
@@ -40,29 +44,22 @@ class AdvBenchDataTest(unittest.TestCase):
                 return [json.loads(line) for line in f]
         train = read('advbench_train_320.jsonl')
         test = read('advbench_infer_200.jsonl')
-        full = read('AdvBench_Text.jsonl')
-        audio = read('AdvBench_Audio.jsonl')
-        by_prompt = {row['prompt']: row for row in full}
-        self.assertEqual((len(train), len(test), len(by_prompt)), (320, 200, 520))
+        self.assertEqual((len(train), len(test)), (320, 200))
         self.assertEqual(len({row['prompt'] for row in train + test}), 520)
-        self.assertTrue(all(by_prompt[row['prompt']] == row for row in train + test))
-        self.assertEqual(len({row['audio'] for row in audio}), 520)
-        for row in audio:
-            self.assertEqual({k: row[k] for k in by_prompt[row['prompt']]}, by_prompt[row['prompt']])
-            self.assertTrue((DATA / 'advbench_audio' / row['audio']).is_file())
+        self.assertTrue(all(set(row) == {'prompt', 'jailbreak_response', 'refusal_response'}
+                            and all(row.values()) for row in train + test))
 
-    def test_audio_mapping_across_shuffle_seeds_and_custom_tts(self):
-        with (DATA / 'AdvBench_Audio.jsonl').open(encoding='utf-8') as f:
-            expected = {row['prompt']: row['audio'] for row in map(json.loads, f)}
+    def test_audio_cache_across_shuffle_seeds_and_custom_tts(self):
         with tempfile.TemporaryDirectory() as tmp:
             for model in MODELS:
-                module = load_module(model, tmp)
+                module = load_module(model, str(Path(tmp) / model))
                 for seed in (1, 7):
                     rows, _ = module.load_test_dataset(seed=seed)
-                    paths = module.ensure_audio_files(rows, generate_tts=False)
+                    paths = module.ensure_audio_files(rows, generate_tts=True)
                     self.assertEqual(len(paths), 200)
                     for row, path in zip(rows, paths):
-                        self.assertEqual(Path(path).name, expected[row['question']])
+                        self.assertEqual(Path(path).read_text(encoding='utf-8'), row['question'])
+                    self.assertEqual(paths, module.ensure_audio_files(rows, generate_tts=False))
                 a = {'id': 0, 'question': 'first custom prompt'}
                 b = {'id': 0, 'question': 'second custom prompt'}
                 pa, pb = module.ensure_audio_files([a, b], generate_tts=True)

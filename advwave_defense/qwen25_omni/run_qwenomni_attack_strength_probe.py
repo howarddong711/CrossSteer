@@ -75,9 +75,9 @@ def loss_summary(losses):
         "last_10_mean": sum(float(x) for x in losses[-10:]) / min(10, len(losses)),
     }
 
-def resolve_audio_paths(dataset_by_id: Dict[int, Dict], ids: List[int], audio_dir: str = "") -> List[str]:
+def resolve_audio_paths(dataset_by_id: Dict[int, Dict], ids: List[int], audio_dir: str = "", generate_tts: bool = False) -> List[str]:
     if not audio_dir:
-        return ensure_audio_files([dataset_by_id[i] for i in ids], generate_tts=False)
+        return ensure_audio_files([dataset_by_id[i] for i in ids], generate_tts=generate_tts)
     base = Path(audio_dir)
     paths = [str(base / f"{i}.wav") for i in ids]
     missing = [p for p in paths if not Path(p).exists()]
@@ -90,6 +90,7 @@ def main():
     parser.add_argument("--model_name", default=DEFAULT_MODEL)
     parser.add_argument("--dataset_csv", default=os.path.join(DATA_DIR, "advbench_infer_200.jsonl"))
     parser.add_argument("--audio_dir", default="")
+    parser.add_argument("--generate_tts", action="store_true")
     parser.add_argument("--ids", nargs="+", type=int, default=None)
     parser.add_argument("--id_start", type=int, default=None)
     parser.add_argument("--id_end", type=int, default=None)
@@ -151,7 +152,7 @@ def main():
     missing_ids = [i for i in args.ids if i not in dataset_by_id]
     if missing_ids:
         raise ValueError(f"Requested ids not found in dataset: {missing_ids}")
-    audio_paths = resolve_audio_paths(dataset_by_id, args.ids, args.audio_dir)
+    audio_paths = resolve_audio_paths(dataset_by_id, args.ids, args.audio_dir, args.generate_tts)
 
     results_path = output_dir / "results.jsonl"
     with results_path.open("w", encoding="utf-8") as handle:

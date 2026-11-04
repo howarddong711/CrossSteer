@@ -23,7 +23,7 @@ from advwave.llamaomni2 import (
     resolve_transformer_layers,
     save_audio,
 )
-from advwave.paths import DATA_DIR, OUTPUT_DIR
+from advwave.paths import OUTPUT_DIR
 from advwave.tts import prompt2audio
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -86,8 +86,6 @@ def _dedup_dataset_by_prompt(dataset: List[dict]) -> List[dict]:
 def _load_dataset_csv(path: str, dedup_prompts: bool = False) -> List[dict]:
     dataset = []
     source = os.path.splitext(os.path.basename(path))[0]
-    with open(os.path.join(DATA_DIR, "AdvBench_Audio.jsonl"), encoding="utf-8") as audio_file:
-        audio_map = {row["prompt"]: row["audio"] for row in map(json.loads, audio_file)}
     with open(path, "r", encoding="utf-8-sig", newline="") as f:
         reader = (json.loads(line) for line in f if line.strip()) if path.endswith('.jsonl') else csv.DictReader(f)
         for idx, row in enumerate(reader):
@@ -95,7 +93,6 @@ def _load_dataset_csv(path: str, dedup_prompts: bool = False) -> List[dict]:
                 {
                     "id": idx,
                     "question": row.get("question", row.get("prompt", "")),
-                    "dataset_audio": audio_map.get(row.get("question", row.get("prompt", ""))),
                     "matching": row.get("matching", row.get("jailbreak_response", "")),
                     "not_matching": row.get("not_matching", row.get("refusal_response", "")),
                     "source": source,

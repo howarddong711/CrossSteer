@@ -19,7 +19,7 @@ The experiments cover Qwen2-Audio, Qwen2.5-Omni, and LLaMA-Omni2, plus a LLaMA-O
 - `vector_training/`: text preference-based vector training for the three backbones.
 - `advwave_defense/`: AdvWave attack and CrossSteer defense runners.
 - `vectors/`: released steering vectors.
-- `data/`: 320/200 JSONL splits and the 520-example text and audio dataset.
+- `data/`: 320/200 JSONL text preference splits.
 - `scripts/check_vectors.py`: inspect the released vectors.
 
 ## Setup
@@ -50,15 +50,10 @@ The released AdvBench data contains harmful prompts and unsafe example responses
 
 | Path | Contents |
 | --- | --- |
-| `data/AdvBench_Text.jsonl` | 520 text preference records: `prompt`, `jailbreak_response`, `refusal_response` |
-| `data/AdvBench_Audio.jsonl` | 520 corresponding records with an additional `audio` filename |
-| `data/advbench_audio/` | 520 audio files referenced by the audio JSONL |
 | `data/advbench_train_320.jsonl` | 320 text preference records for training |
 | `data/advbench_infer_200.jsonl` | 200 text preference records for evaluation |
 
-Audio paths are relative to `data/advbench_audio/`. For example, a record with `"audio": "0.wav"` refers to `data/advbench_audio/0.wav`. The training and evaluation files are disjoint subsets of `AdvBench_Text.jsonl`. The corresponding audio records can be found in `AdvBench_Audio.jsonl` by matching the prompt.
-
-The released audio files have a `.wav` suffix, but their contents are MP3-encoded. Use an audio decoder that detects the actual format and resample as required by the model. This release does not contain 16 kHz PCM WAV files.
+Each record contains `prompt`, `jailbreak_response`, and `refusal_response`. The training and evaluation prompts are disjoint. Audio inputs are generated from evaluation prompts using text-to-speech and cached locally; generated audio is not included in this repository.
 
 ## Steering Vectors
 
@@ -91,16 +86,16 @@ Run from the repository root, with model weights and any required attack inputs 
 
 ```bash
 cd advwave_defense/qwen2_audio
-python run_advwave_defense.py --model_name <MODEL_PATH> --attacks audio_ours --layer 15
+python run_advwave_defense.py --model_name <MODEL_PATH> --attacks audio_ours --layer 15 --generate_tts
 
 cd ../qwen25_omni
-python run_advwave_defense_qwenomni_cached.py --model_name <MODEL_PATH> --layers 13 --vector_epoch 400
+python run_advwave_defense_qwenomni_cached.py --model_name <MODEL_PATH> --layers 13 --vector_epoch 400 --generate_tts
 
 cd ../llamaomni2
-python run_advwave_defense_llamaomni2.py --model_name <MODEL_PATH> --layers 12 --vector_epoch 300
+python run_advwave_defense_llamaomni2.py --model_name <MODEL_PATH> --layers 12 --vector_epoch 300 --generate_tts
 ```
 
-Generated attack caches, logs, and experiment outputs are excluded from the repository. The included WAV files are the dataset inputs, not generated attack outputs.
+On the first run, `--generate_tts` generates missing audio using the configured TTS API. Subsequent runs can reuse the prompt-keyed audio cache without this flag. Generated audio, attack caches, logs, and experiment outputs are excluded from the repository.
 
 ## Citation
 
