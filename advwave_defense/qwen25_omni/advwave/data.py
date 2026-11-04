@@ -1,5 +1,7 @@
 import os
 import random
+import json
+import hashlib
 from typing import List, Tuple, Dict, Optional
 
 import pandas as pd
@@ -56,12 +58,15 @@ def load_test_dataset(
         if seed is None:
             seed = 0
 
+    with open(os.path.join(DATA_DIR, "AdvBench_Audio.jsonl"), encoding="utf-8") as f:
+        audio_map = {row["prompt"]: row["audio"] for row in map(json.loads, f)}
     dataset = []
     for idx, row in enumerate(records):
         dataset.append(
             {
                 "id": idx,
                 "question": row.get("question", ""),
+                "dataset_audio": audio_map.get(row.get("question", "")),
                 "matching": row.get("matching", ""),
                 "not_matching": row.get("not_matching", ""),
                 "source": row.get("source", ""),
@@ -82,21 +87,7 @@ def ensure_audio_files(
     tts_max_retries: int = 5,
     tts_sleep: float = 0.5,
 ) -> List[str]:
-    audio_dir = build_audio_paths()
-    audio_paths: List[str] = []
-
-    for item in dataset:
-        audio_path = os.path.join(audio_dir, f"{item['id']}.wav")
-        if generate_tts:
-            prompt2audio(
-                item["question"],
-                audio_path,
-                max_retries=tts_max_retries,
-                throttle_seconds=tts_sleep,
-            )
-        audio_paths.append(audio_path)
-
-    return audio_paths
+    return [ensure_audio_file(item, generate_tts, tts_max_retries, tts_sleep) for item in dataset]
 
 def ensure_audio_file(
     item: Dict,
@@ -104,13 +95,21 @@ def ensure_audio_file(
     tts_max_retries: int = 5,
     tts_sleep: float = 0.5,
 ) -> str:
+    if not generate_tts and item.get("dataset_audio"):
+        audio_path = os.path.join(DATA_DIR, "advbench_audio", item["dataset_audio"])
+        if not os.path.isfile(audio_path):
+            raise FileNotFoundError(audio_path)
+        return audio_path
     audio_dir = build_audio_paths()
-    audio_path = os.path.join(audio_dir, f"{item['id']}.wav")
-    if generate_tts:
+    key = hashlib.sha256(item["question"].encode("utf-8")).hexdigest()
+    audio_path = os.path.join(audio_dir, f"{key}.wav")
+    if generate_tts and not os.path.exists(audio_path):
         prompt2audio(
             item["question"],
             audio_path,
             max_retries=tts_max_retries,
             throttle_seconds=tts_sleep,
         )
+    if not os.path.isfile(audio_path):
+        raise FileNotFoundError(f"Audio not found for prompt; enable --generate_tts: {audio_path}")
     return audio_path

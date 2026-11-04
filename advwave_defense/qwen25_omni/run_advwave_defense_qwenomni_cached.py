@@ -247,6 +247,8 @@ def build_attack_cache(model, processor, dataset: List[dict], audio_paths: List[
     total = len(dataset)
     for local_idx, (sample, raw_audio) in enumerate(zip(dataset, audio_paths)):
         idx = int(sample["id"])
+        if idx in existing and existing[idx].get("question") != sample["question"]:
+            raise ValueError(f"Attack cache id={idx} belongs to a different prompt; use a new run name")
         if idx in existing and existing[idx].get("adv_audio_path") and os.path.exists(existing[idx]["adv_audio_path"]):
             print(f"[Attack cache] skip existing {local_idx + 1}/{total} id={idx}")
             continue
@@ -306,7 +308,7 @@ def run_defense_sweep(model, processor, attack_rows: List[dict], vector_jobs: Li
         layer_dir = os.path.join(defense_root, f"layer{layer}")
         results_path = os.path.join(layer_dir, "results.jsonl")
         existing_rows = []
-        existing_keys = set()
+        existing_keys = {}
         if os.path.exists(results_path):
             with open(results_path, "r", encoding="utf-8") as f:
                 for line in f:
@@ -315,7 +317,7 @@ def run_defense_sweep(model, processor, attack_rows: List[dict], vector_jobs: Li
                     except json.JSONDecodeError:
                         continue
                     existing_rows.append(row)
-                    existing_keys.add((int(row["id"]), str(row["multiplier"])))
+                    existing_keys[(int(row["id"]), str(row["multiplier"]))] = row
 
         steering_vector = load_steering_vector(vector_path, args.device)
         wrapped_layer = apply_steering_to_model(model, steering_vector, layer)
@@ -331,6 +333,8 @@ def run_defense_sweep(model, processor, attack_rows: List[dict], vector_jobs: Li
                     idx = int(row["id"])
                     key = (idx, m_key)
                     if key in existing_keys:
+                        if existing_keys[key].get("question") != row["question"] or existing_keys[key].get("adv_audio_path") != row["adv_audio_path"]:
+                            raise ValueError(f"Defense cache id={idx} does not match the current attack; use a new run name")
                         continue
                     print(f"  [Defense {local_idx + 1}/{len(attack_rows)} id={idx} m={m_key}] ", end="", flush=True)
                     response = inference_with_audio(model, processor, row["adv_audio_path"], args.device, prompt="")
@@ -362,7 +366,7 @@ def run_defense_sweep(model, processor, attack_rows: List[dict], vector_jobs: Li
                     }
                     _append_jsonl(results_path, defense_row)
                     existing_rows.append(defense_row)
-                    existing_keys.add(key)
+                    existing_keys[key] = defense_row
                     print(_label_text(outcome))
                     torch.cuda.empty_cache()
         finally:

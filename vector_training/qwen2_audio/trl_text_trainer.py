@@ -909,7 +909,7 @@ class CrossSteerTextTrainer(Trainer):
             print(f"❌ Audio tokenization failed (path: {audio_path}): {str(e)[:100]}")
             return None
 
-    def _pad_tokens_to_max_length(self, tokens: torch.Tensor, max_length: Optional[int] = None) -> torch.Tensor:
+    def _pad_tokens_to_max_length(self, tokens: torch.Tensor, max_length: Optional[int] = None, pad_value: Optional[int] = None) -> torch.Tensor:
 
         if max_length is None:
             return tokens
@@ -924,10 +924,8 @@ class CrossSteerTextTrainer(Trainer):
         pad_shape = list(tokens.shape)
         pad_shape[1] = pad_length
 
-        if (tokens == self.label_pad_token_id).any():
-            pad_value = self.label_pad_token_id
-        else:
-            pad_value = self.padding_value
+        if pad_value is None:
+            pad_value = self.label_pad_token_id if (tokens == self.label_pad_token_id).any() else self.padding_value
 
         padding = torch.full(
             pad_shape,
@@ -967,28 +965,28 @@ class CrossSteerTextTrainer(Trainer):
 
         chosen_input_ids = self._pad_tokens_to_max_length(
             processed_batch["chosen_input_ids"],
-            max_length
+            max_length, pad_value=self.padding_value
         )
         chosen_attention_mask = self._pad_tokens_to_max_length(
             processed_batch["chosen_attention_mask"],
-            max_length
+            max_length, pad_value=0
         )
         chosen_labels = self._pad_tokens_to_max_length(
             processed_batch["chosen_labels"],
-            max_length
+            max_length, pad_value=self.label_pad_token_id
         )
 
         rejected_input_ids = self._pad_tokens_to_max_length(
             processed_batch["rejected_input_ids"],
-            max_length
+            max_length, pad_value=self.padding_value
         )
         rejected_attention_mask = self._pad_tokens_to_max_length(
             processed_batch["rejected_attention_mask"],
-            max_length
+            max_length, pad_value=0
         )
         rejected_labels = self._pad_tokens_to_max_length(
             processed_batch["rejected_labels"],
-            max_length
+            max_length, pad_value=self.label_pad_token_id
         )
 
         concatenated_batch["concatenated_input_ids"] = torch.cat(
@@ -1058,8 +1056,8 @@ class CrossSteerTextTrainer(Trainer):
 
             concatenated_batch["concatenated_decoder_attention_mask"] = torch.cat(
                 [
-                    self._pad_tokens_to_max_length(processed_batch["chosen_decoder_attention_mask"], max_decoder_length),
-                    self._pad_tokens_to_max_length(processed_batch["rejected_decoder_attention_mask"], max_decoder_length)
+                    self._pad_tokens_to_max_length(processed_batch["chosen_decoder_attention_mask"], max_decoder_length, pad_value=0),
+                    self._pad_tokens_to_max_length(processed_batch["rejected_decoder_attention_mask"], max_decoder_length, pad_value=0)
                 ],
                 dim=0,
             ).to(device=device)

@@ -52,11 +52,13 @@ The released AdvBench data contains harmful prompts and unsafe example responses
 | --- | --- |
 | `data/AdvBench_Text.jsonl` | 520 text preference records: `prompt`, `jailbreak_response`, `refusal_response` |
 | `data/AdvBench_Audio.jsonl` | 520 corresponding records with an additional `audio` filename |
-| `data/advbench_audio/` | 520 WAV files referenced by the audio JSONL |
+| `data/advbench_audio/` | 520 audio files referenced by the audio JSONL |
 | `data/advbench_train_320.jsonl` | 320 text preference records for training |
 | `data/advbench_infer_200.jsonl` | 200 text preference records for evaluation |
 
 Audio paths are relative to `data/advbench_audio/`. For example, a record with `"audio": "0.wav"` refers to `data/advbench_audio/0.wav`. The training and evaluation files are disjoint subsets of `AdvBench_Text.jsonl`. The corresponding audio records can be found in `AdvBench_Audio.jsonl` by matching the prompt.
+
+The released audio files have a `.wav` suffix, but their contents are MP3-encoded. Use an audio decoder that detects the actual format and resample as required by the model. This release does not contain 16 kHz PCM WAV files.
 
 ## Steering Vectors
 

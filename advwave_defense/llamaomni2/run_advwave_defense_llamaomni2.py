@@ -23,7 +23,7 @@ from advwave.llamaomni2 import (
     resolve_transformer_layers,
     save_audio,
 )
-from advwave.paths import OUTPUT_DIR
+from advwave.paths import DATA_DIR, OUTPUT_DIR
 from advwave.tts import prompt2audio
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -86,6 +86,8 @@ def _dedup_dataset_by_prompt(dataset: List[dict]) -> List[dict]:
 def _load_dataset_csv(path: str, dedup_prompts: bool = False) -> List[dict]:
     dataset = []
     source = os.path.splitext(os.path.basename(path))[0]
+    with open(os.path.join(DATA_DIR, "AdvBench_Audio.jsonl"), encoding="utf-8") as audio_file:
+        audio_map = {row["prompt"]: row["audio"] for row in map(json.loads, audio_file)}
     with open(path, "r", encoding="utf-8-sig", newline="") as f:
         reader = (json.loads(line) for line in f if line.strip()) if path.endswith('.jsonl') else csv.DictReader(f)
         for idx, row in enumerate(reader):
@@ -93,6 +95,7 @@ def _load_dataset_csv(path: str, dedup_prompts: bool = False) -> List[dict]:
                 {
                     "id": idx,
                     "question": row.get("question", row.get("prompt", "")),
+                    "dataset_audio": audio_map.get(row.get("question", row.get("prompt", ""))),
                     "matching": row.get("matching", row.get("jailbreak_response", "")),
                     "not_matching": row.get("not_matching", row.get("refusal_response", "")),
                     "source": source,
@@ -166,14 +169,15 @@ def _ensure_audio_files_stable(
 ) -> List[str]:
     audio_paths = []
     for sample in dataset:
-        audio_path = sample.get("audio_path") or _stable_audio_path(sample)
-        if not os.path.exists(audio_path) and generate_tts:
-            prompt2audio(
-                sample["question"],
-                audio_path,
-                max_retries=tts_max_retries,
-                throttle_seconds=tts_sleep,
-            )
+        audio_path = sample.get("audio_path")
+        if audio_path:
+            if not os.path.isfile(audio_path):
+                raise FileNotFoundError(audio_path)
+        else:
+            audio_path = ensure_audio_files(
+                [sample], generate_tts=generate_tts,
+                tts_max_retries=tts_max_retries, tts_sleep=tts_sleep,
+            )[0]
         audio_paths.append(audio_path)
     return audio_paths
 
