@@ -38,7 +38,6 @@ The experiments cover Qwen2-Audio, Qwen2.5-Omni, and LLaMA-Omni2, plus a LLaMA-O
 - `advwave_defense/`: AdvWave attack and CrossSteer defense runners.
 - `vectors/`: released steering vectors.
 - `data/`: 320/200 JSONL text preference splits.
-- `scripts/check_vectors.py`: inspect the released vectors.
 
 ## Quick Start
 
@@ -57,14 +56,6 @@ export SILICONFLOW_API_KEY="<your-key>"
 ```
 
 Never commit API keys. External experiment logging is disabled by default; pass `--report_to swanlab` to a training script to enable SwanLab.
-
-### Check the Released Vectors
-
-To inspect the supplied vectors:
-
-```bash
-python scripts/check_vectors.py
-```
 
 ### Dataset
 
